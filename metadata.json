@@ -1,0 +1,7 @@
+{
+  "name": "IQC Precision",
+  "description": "Clinical Architect v1.0 - Advanced manufacturing precision and batch compliance monitoring system.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
