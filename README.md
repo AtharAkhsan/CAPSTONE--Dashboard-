@@ -1,85 +1,145 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# IQC Precision — Industrial Inspection Dashboard
 
-# CAPSTONE (Dashboard)
+Real-time quality control dashboard for micro-part quantity verification in manufacturing environments. Built with React, Vite, and Supabase.
 
-Lightweight React + Vite dashboard starter with Supabase integration and GenAI support.
+## Overview
 
-## Features
+This dashboard is the **web monitoring layer** of a larger industrial inspection pipeline that combines AI-based density estimation, load cell sensor fusion, and camera-based visual verification. It provides:
 
-- Vite + React (TypeScript)
-- Supabase client setup for database/auth/storage
-- TailwindCSS for styling
-- Example dashboard components and charts
+- **Real-time telemetry** — Live sensor data from the operator station (Streamlit) via Supabase Realtime (Postgres Changes)
+- **Inspection logs** — Automated PASS/REJECT decisions based on a configurable tolerance threshold (default: 3%)
+- **Live camera feed** — Semi-live inspection snapshots fetched from Supabase Storage
+- **QC Analytics** — Charts and KPIs derived from verification logs, NG reports, and vendor claim data
+- **Role-based access** — Internal (admin/manager) and vendor viewer roles with Supabase Auth + RLS
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 + TypeScript |
+| Build Tool | Vite 6 |
+| Styling | TailwindCSS 4 |
+| Backend | Supabase (Database, Auth, Storage, Realtime) |
+| Charts | Recharts |
+| Animations | Framer Motion |
+| Icons | Lucide React |
+
+## Project Structure
+
+```
+src/
+├── App.tsx                 # Main app — routing, layout, LiveInspection, MasterData, DiscrepancyLogs
+├── main.tsx                # Entry point
+├── index.css               # Global styles & design tokens
+├── types.ts                # TypeScript interfaces
+├── context/
+│   └── AuthContext.tsx      # Supabase Auth provider (session, profile, roles)
+├── hooks/
+│   └── useQCData.ts        # QC Analytics data hook (verification logs, NG, claims)
+├── lib/
+│   ├── supabase.ts         # Supabase client initialization
+│   └── utils.ts            # Utility functions (cn)
+└── pages/
+    ├── LoginPage.tsx        # Authentication page
+    └── QCAnalytics.tsx      # QC Analytics dashboard (charts, KPIs, alerts)
+```
+
+## Database Schema
+
+| Table | Purpose |
+|---|---|
+| `users` | User profiles with role and vendor association |
+| `vendors` | Vendor registry |
+| `parts` | Part catalog (code, name, weight, tolerance) |
+| `verification_logs` | Inspection results (target, actual, AI count, load cell, status) |
+| `telemetry_logs` | Real-time sensor telemetry from operator station |
+| `ng_reports` | Non-Good quality reports |
+| `claim_reports` | Vendor claim tracking |
+
+**Storage Bucket:** `camera_snapshots` — Latest inspection frame and per-log proof images.
 
 ## Prerequisites
 
-- Node.js (recommended v18+)
+- Node.js v18+
+- A Supabase project with the schema above
 
-## Setup (Local Development)
+## Setup
 
-1. Install dependencies:
+1. **Install dependencies:**
 
-   `npm install`
+   ```bash
+   npm install
+   ```
 
-2. Create a local env file (copy or create `.env.local`) and add the required variables:
+2. **Configure environment variables** — create `.env.local`:
 
-- `VITE_SUPABASE_URL` — your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` — your Supabase anon/public key
+   ```env
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
 
-Example (in `.env.local`):
+3. **Start the dev server:**
 
-```
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=public-anon-key
-GEMINI_API_KEY=your_gemini_api_key
-```
+   ```bash
+   npm run dev
+   ```
 
-3. Start the dev server:
-
-   `npm run dev`
-
-The dev server runs on port `3000` by default (see `package.json` script).
+   The app runs at `http://localhost:3000`.
 
 ## Scripts
 
-- `npm run dev` — start dev server (Vite)
-- `npm run build` — build for production
-- `npm run preview` — preview the production build
-- `npm run clean` — remove `dist` folder
-- `npm run lint` — run TypeScript type-checking
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | TypeScript type checking |
+| `npm run clean` | Remove `dist` folder |
 
-## Supabase Configuration
+## Deployment
 
-The Supabase client is initialized in [src/lib/supabase.ts](src/lib/supabase.ts). It reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from the environment. If these values are missing you will see a console warning at startup.
+Build and deploy the `dist` folder to any static hosting:
 
-If you haven't created a Supabase project yet, sign up at https://supabase.com, create a project, then copy the project URL and anon key into your `.env.local` file.
+```bash
+npm run build
+```
 
-## Build & Deploy
+Recommended platforms: **Vercel**, Netlify, or Cloudflare Pages.
 
-1. Build the app:
+> **Note:** Environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) must be configured in your hosting provider's dashboard.
 
-   `npm run build`
+## Architecture
 
-2. Serve or deploy the contents of the `dist` folder with your preferred static hosting (Netlify, Vercel, Cloudflare Pages, etc.). Use `npm run preview` to locally test the production build.
+```
+┌─────────────────────┐     ┌──────────────────┐     ┌─────────────────────┐
+│  Operator Station   │     │     Supabase      │     │   Web Dashboard     │
+│  (Streamlit/Python) │────▶│  Database/Storage │◀────│   (This Project)    │
+│                     │     │  Realtime/Auth    │     │                     │
+│  • AI Counting      │     └──────────────────┘     │  • Live Telemetry   │
+│  • Load Cell Sensor │                               │  • Inspection Logs  │
+│  • Camera Capture   │                               │  • QC Analytics     │
+└─────────────────────┘                               └─────────────────────┘
+```
 
-## Troubleshooting
+## Key Features
 
-- If the app complains about missing Supabase credentials, confirm `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are present in `.env.local` and restart the dev server.
-- For issues with AI features, ensure `GEMINI_API_KEY` is set and valid.
+### Live Inspection
+- Real-time telemetry via Supabase Postgres Changes subscription
+- Semi-live camera feed (1.5s polling from Storage)
+- Dynamic PASS/REJECT status with color-coded indicators
 
-## Next steps
+### Discrepancy Logs
+- Filterable by date range and status (PASS/REJECT)
+- Per-log inspection proof images
+- CSV export functionality
+- Detailed variance analysis panel
 
-- Hook up your Supabase schemas and RLS policies for production use.
-- Add additional dashboard widgets, charts, and auth flows as needed.
+### QC Analytics
+- KPI cards (Total Inspections, NG Rate, Claim Amount)
+- Distribution pie chart, trend lines, sensor comparison bars
+- NG category breakdown and vendor ranking
+- Smart alerts for anomalies and threshold breaches
 
----
-
-If you'd like, I can also:
-
-- add a `.env.local.example` file
-- create a short `CONTRIBUTING.md` with development guidelines
-- set up a netlify/vercel deployment config
-
-Tell me which of the above you want next.
+### Master Data
+- Part registry with CRUD operations
+- Inventory health overview (compliance rate, critical discrepancies)
