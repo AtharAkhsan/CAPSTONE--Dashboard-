@@ -255,7 +255,7 @@ export default function QCAnalytics() {
           </div>
 
           {/* Charts Row 2 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={cn("grid grid-cols-1 gap-6", isInternal ? "lg:grid-cols-2" : "")}>
             {/* Sensor Comparison (internal only) */}
             {isInternal && (
               <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">

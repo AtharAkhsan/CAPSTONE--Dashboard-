@@ -45,7 +45,7 @@ export default function LoginPage() {
       </div>
 
       {/* Left decorative panel - hidden on mobile */}
-      <div className="hidden lg:flex flex-col justify-center flex-1 px-16 relative">
+      <div className="hidden lg:flex flex-col justify-center flex-1 px-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
@@ -92,7 +92,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right login panel */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-16">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
