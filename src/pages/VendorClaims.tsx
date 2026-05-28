@@ -59,12 +59,12 @@ const STATUS_CONFIG: Record<ClaimStatus, StatusConfig> = {
 // Workflow: which statuses can transition to which
 const VENDOR_TRANSITIONS: Partial<Record<ClaimStatus, { next: ClaimStatus[]; labels: Partial<Record<ClaimStatus, string>> }>> = {
   submitted: {
-    next: ['under_review'],
-    labels: { under_review: 'Mulai Review' },
+    next: ['under_review', 'accepted', 'rejected'],
+    labels: { under_review: 'Mulai Review', accepted: 'Accept', rejected: 'Reject' },
   },
   under_review: {
     next: ['accepted', 'rejected'],
-    labels: { accepted: 'Terima Claim', rejected: 'Tolak Claim' },
+    labels: { accepted: 'Accept', rejected: 'Reject' },
   },
   accepted: {
     next: ['replacement_sent'],

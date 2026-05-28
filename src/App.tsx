@@ -33,7 +33,8 @@ import {
   Plus,
   Loader2,
   PieChart,
-  FileText
+  FileText,
+  Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
@@ -699,10 +700,23 @@ const MasterData = ({ parts, setParts, logs }: { parts: Part[], setParts: React.
 };
 
 const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>> }) => {
-  const [selectedLog, setSelectedLog] = useState<LogEntry>(logs[0] || MOCK_LOGS[0]);
+  const { isInternal, isVendor, userProfile } = useAuth();
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Proof modal state
+  const [proofLog, setProofLog] = useState<LogEntry | null>(null);
+
+  // Claim form modal state (admin only)
+  const [claimLog, setClaimLog] = useState<LogEntry | null>(null);
+  const [claimForm, setClaimForm] = useState({
+    periodStart: '',
+    periodEnd: '',
+    claimAmount: '',
+    notes: '',
+  });
+  const [claimSaving, setClaimSaving] = useState(false);
 
   // Filter logs based on date range and status
   const filteredLogs = React.useMemo(() => {
@@ -736,6 +750,80 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
     a.download = `inspection_logs_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Open claim form with pre-filled data from the log
+  const openClaimForm = (log: LogEntry) => {
+    const today = new Date().toISOString().split('T')[0];
+    // Default period: start of month to today
+    const monthStart = today.substring(0, 7) + '-01';
+    setClaimForm({
+      periodStart: monthStart,
+      periodEnd: today,
+      claimAmount: '',
+      notes: `Discrepancy detected on ${log.code} (${log.name}) — Target: ${log.target}, Actual: ${log.actual}, Status: ${log.status}`,
+    });
+    setClaimLog(log);
+  };
+
+  // Submit claim to Supabase
+  const handleSubmitClaim = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!claimLog || claimSaving) return;
+    setClaimSaving(true);
+
+    try {
+      // Find vendor_id from the log
+      let vendorId = claimLog.vendor_id;
+      if (!vendorId) {
+        // Try to find vendor by name
+        const { data: vendorData } = await supabase
+          .from('vendors')
+          .select('id')
+          .eq('name', claimLog.vendor)
+          .limit(1)
+          .single();
+        vendorId = vendorData?.id;
+      }
+
+      if (!vendorId) {
+        alert('Vendor tidak ditemukan untuk log ini.');
+        setClaimSaving(false);
+        return;
+      }
+
+      const payload = {
+        vendor_id: vendorId,
+        period_start: claimForm.periodStart,
+        period_end: claimForm.periodEnd,
+        status: 'submitted',
+        total_inspected: claimLog.target,
+        total_ng: Math.abs(claimLog.actual - claimLog.target),
+        ng_rate_pct: claimLog.target > 0 ? Math.abs((claimLog.actual - claimLog.target) / claimLog.target * 100) : 0,
+        claim_amount: claimForm.claimAmount ? parseFloat(claimForm.claimAmount) : null,
+        notes: claimForm.notes || null,
+        report_url: claimLog.proofUrl || null,
+        generated_by: userProfile?.id || null,
+        submitted_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from('claim_reports').insert(payload);
+
+      if (error) {
+        console.error('Claim insert error:', error);
+        alert('Gagal membuat claim: ' + error.message);
+        return;
+      }
+
+      alert('Claim request berhasil dikirim ke vendor!');
+      setClaimLog(null);
+      setClaimForm({ periodStart: '', periodEnd: '', claimAmount: '', notes: '' });
+    } catch (err) {
+      console.error('Claim submission error:', err);
+      alert('Terjadi kesalahan saat mengirim claim.');
+    } finally {
+      setClaimSaving(false);
+    }
   };
 
   return (
@@ -781,135 +869,283 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
         </div>
       </section>
 
-      <div className="flex flex-col xl:flex-row gap-8 items-start">
-        <section className="flex-1 w-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-surface-container-high">
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Timestamp</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Part Info</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Target/Actual</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline text-center">AI Count</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/10">
-                {filteredLogs.map((log) => (
-                  <tr
-                    key={log.id}
-                    onClick={() => setSelectedLog(log)}
-                    className={cn(
-                      "hover:bg-surface-container-low transition-colors cursor-pointer",
-                      selectedLog.id === log.id ? "bg-surface-container-low" : ""
-                    )}
-                  >
-                    <td className="px-6 py-5 text-sm font-medium text-outline">{log.timestamp}</td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold">{log.code}</span>
-                        <span className="text-xs text-outline">{log.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="text-sm font-mono flex items-center gap-2">
-                        <span className="text-outline">{log.target}</span>
-                        <span className="text-outline">/</span>
-                        <span className={cn("font-bold", log.status === 'REJECTED' ? "text-tertiary" : "text-green-600")}>{log.actual}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-center text-sm font-medium">{log.aiCount}</td>
-                    <td className="px-6 py-5">
-                      <span className={cn(
-                        "px-3 py-1 text-[10px] font-bold tracking-widest uppercase rounded",
-                        log.status === 'REJECTED' ? "bg-red-600 text-white" : "bg-green-600 text-white"
-                      )}>
-                        {log.status === 'REJECTED' ? 'REJECT' : 'PASS'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-primary">
-                          <Eye size={18} />
+      {/* Table — full width, no sidebar */}
+      <section className="w-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-surface-container-high">
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Timestamp</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Part Info</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Target/Actual</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline text-center">AI Count</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Status</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant/10">
+              {filteredLogs.map((log) => (
+                <tr
+                  key={log.id}
+                  className="hover:bg-surface-container-low transition-colors group"
+                >
+                  <td className="px-6 py-5 text-sm font-medium text-outline">{log.timestamp}</td>
+                  <td className="px-6 py-5">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold">{log.code}</span>
+                      <span className="text-xs text-outline">{log.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="text-sm font-mono flex items-center gap-2">
+                      <span className="text-outline">{log.target}</span>
+                      <span className="text-outline">/</span>
+                      <span className={cn("font-bold", log.status === 'REJECTED' ? "text-tertiary" : "text-green-600")}>{log.actual}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 text-center text-sm font-medium">{log.aiCount}</td>
+                  <td className="px-6 py-5">
+                    <span className={cn(
+                      "px-3 py-1 text-[10px] font-bold tracking-widest uppercase rounded",
+                      log.status === 'REJECTED' ? "bg-red-600 text-white" : "bg-green-600 text-white"
+                    )}>
+                      {log.status === 'REJECTED' ? 'REJECT' : 'PASS'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <div className="flex justify-center gap-2">
+                      {/* Check Proof — both vendor and admin */}
+                      <button
+                        onClick={() => setProofLog(log)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-95"
+                      >
+                        <Eye size={14} />
+                        Check Proof
+                      </button>
+                      {/* Send Request — admin only */}
+                      {isInternal && (
+                        <button
+                          onClick={() => openClaimForm(log)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-tertiary/10 text-tertiary hover:bg-tertiary/20 transition-all active:scale-95"
+                        >
+                          <Send size={14} />
+                          Send Request
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-        <aside className="w-full xl:w-96 flex flex-col gap-6 sticky top-24">
-          <div className="glass-panel p-6 rounded-2xl border border-white shadow-xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold uppercase tracking-widest">Inspection Proof</h3>
-              <span className={cn("px-2 py-0.5 text-[10px] font-black text-white rounded", selectedLog.status === 'REJECTED' ? 'bg-red-600' : 'bg-green-600')}>
-                {selectedLog.status === 'REJECTED' ? 'REJECT' : 'PASS'}
-              </span>
-            </div>
-            <div className="w-full h-56 bg-surface-container-highest rounded-xl relative overflow-hidden mb-6">
-              <img
-                src={selectedLog.proofUrl || 'https://picsum.photos/seed/heatmap/400/300'}
-                alt="Inspection Proof"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/heatmap/400/300';
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
-                <span className="text-white text-[10px] font-bold uppercase tracking-widest">Inspection Snapshot</span>
-                <span className="text-white/80 text-[10px]">{selectedLog.timestamp}</span>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-outline font-bold uppercase tracking-widest">Log Detail</span>
-                <span className="text-sm font-bold mt-1">{selectedLog.code} — {selectedLog.name}</span>
-                <span className="text-xs text-outline mt-0.5">{selectedLog.vendor}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-4 border-y border-outline-variant/10">
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-outline font-medium">Target</span>
-                  <span className="text-lg font-bold">{selectedLog.target}</span>
+      {/* ══════════ Proof Modal ══════════ */}
+      <AnimatePresence>
+        {proofLog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setProofLog(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-2xl border border-outline-variant/20 overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b border-outline-variant/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-bold uppercase tracking-widest">Inspection Proof</h3>
+                  <span className={cn("px-2 py-0.5 text-[10px] font-black text-white rounded", proofLog.status === 'REJECTED' ? 'bg-red-600' : 'bg-green-600')}>
+                    {proofLog.status === 'REJECTED' ? 'REJECT' : 'PASS'}
+                  </span>
                 </div>
-                <div className="flex flex-col items-center border-x border-outline-variant/10">
-                  <span className="text-[10px] text-outline font-medium">Actual</span>
-                  <span className={cn("text-lg font-bold", selectedLog.status === 'REJECTED' ? 'text-red-600' : 'text-green-600')}>{selectedLog.actual}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-[10px] text-outline font-medium">Variance</span>
-                  <span className={cn("text-lg font-bold", selectedLog.status === 'REJECTED' ? 'text-red-600' : 'text-green-600')}>{selectedLog.actual - selectedLog.target} pcs</span>
+                <button onClick={() => setProofLog(null)} className="p-2 hover:bg-surface-container-high rounded-full transition-colors">
+                  <XCircle size={20} />
+                </button>
+              </div>
+
+              {/* Proof Image */}
+              <div className="w-full h-56 bg-surface-container-highest relative overflow-hidden">
+                <img
+                  src={proofLog.proofUrl || 'https://picsum.photos/seed/heatmap/400/300'}
+                  alt="Inspection Proof"
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/heatmap/400/300';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+                  <span className="text-white text-[10px] font-bold uppercase tracking-widest">Inspection Snapshot</span>
+                  <span className="text-white/80 text-[10px]">{proofLog.timestamp}</span>
                 </div>
               </div>
-              {selectedLog.status === 'REJECTED' ? (
-                <div className="bg-tertiary/10 p-4 rounded-xl flex gap-3">
-                  <AlertTriangle size={20} className="text-tertiary shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-tertiary leading-tight">Count Mismatch Detected</p>
-                    <p className="text-[10px] text-tertiary/80 mt-1 leading-relaxed">Target quantity was {selectedLog.target} units but actual count is {selectedLog.actual} units — a discrepancy of {Math.abs(((selectedLog.actual - selectedLog.target) / selectedLog.target * 100)).toFixed(1)}% which exceeds the 3% tolerance threshold.</p>
+
+              {/* Detail */}
+              <div className="p-6 space-y-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-outline font-bold uppercase tracking-widest">Log Detail</span>
+                  <span className="text-sm font-bold mt-1">{proofLog.code} — {proofLog.name}</span>
+                  <span className="text-xs text-outline mt-0.5">{proofLog.vendor}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 py-4 border-y border-outline-variant/10">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] text-outline font-medium">Target</span>
+                    <span className="text-lg font-bold">{proofLog.target}</span>
+                  </div>
+                  <div className="flex flex-col items-center border-x border-outline-variant/10">
+                    <span className="text-[10px] text-outline font-medium">Actual</span>
+                    <span className={cn("text-lg font-bold", proofLog.status === 'REJECTED' ? 'text-red-600' : 'text-green-600')}>{proofLog.actual}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] text-outline font-medium">Variance</span>
+                    <span className={cn("text-lg font-bold", proofLog.status === 'REJECTED' ? 'text-red-600' : 'text-green-600')}>{proofLog.actual - proofLog.target} pcs</span>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-primary/10 p-4 rounded-xl flex gap-3">
-                  <CheckCircle2 size={20} className="text-primary shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-primary leading-tight">Inspection Passed</p>
-                    <p className="text-[10px] text-primary/80 mt-1 leading-relaxed">Target: {selectedLog.target} units, Actual: {selectedLog.actual} units. Variance within acceptable 3% tolerance.</p>
+                {proofLog.status === 'REJECTED' ? (
+                  <div className="bg-tertiary/10 p-4 rounded-xl flex gap-3">
+                    <AlertTriangle size={20} className="text-tertiary shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-tertiary leading-tight">Count Mismatch Detected</p>
+                      <p className="text-[10px] text-tertiary/80 mt-1 leading-relaxed">Target quantity was {proofLog.target} units but actual count is {proofLog.actual} units — a discrepancy of {Math.abs(((proofLog.actual - proofLog.target) / proofLog.target * 100)).toFixed(1)}% which exceeds the 3% tolerance threshold.</p>
+                    </div>
                   </div>
-                </div>
-              )}
-              <button className="w-full py-3 bg-primary text-on-primary font-bold text-xs uppercase tracking-widest rounded-lg hover:bg-primary-container transition-all flex items-center justify-center gap-2">
-                <CheckCircle2 size={16} />
-                Acknowledge Log
-              </button>
-            </div>
+                ) : (
+                  <div className="bg-primary/10 p-4 rounded-xl flex gap-3">
+                    <CheckCircle2 size={20} className="text-primary shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-primary leading-tight">Inspection Passed</p>
+                      <p className="text-[10px] text-primary/80 mt-1 leading-relaxed">Target: {proofLog.target} units, Actual: {proofLog.actual} units. Variance within acceptable 3% tolerance.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </div>
-        </aside>
-      </div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════ Claim Request Form Modal (Admin) ══════════ */}
+      <AnimatePresence>
+        {claimLog && isInternal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !claimSaving && setClaimLog(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-surface-container-lowest w-full max-w-xl rounded-2xl shadow-2xl border border-outline-variant/20 overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-outline-variant/10 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold">Send Claim Request</h3>
+                  <p className="text-xs text-outline mt-0.5">Buat claim baru berdasarkan discrepancy log</p>
+                </div>
+                <button onClick={() => !claimSaving && setClaimLog(null)} className="p-2 hover:bg-surface-container-high rounded-full transition-colors">
+                  <XCircle size={20} />
+                </button>
+              </div>
+
+              {/* Inspection Proof Preview */}
+              <div className="px-6 pt-6">
+                <div className="bg-surface-container-low rounded-xl p-4 flex gap-4 items-start">
+                  <div className="w-24 h-16 rounded-lg overflow-hidden bg-surface-container-highest shrink-0">
+                    <img
+                      src={claimLog.proofUrl || 'https://picsum.photos/seed/heatmap/400/300'}
+                      alt="Proof"
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/heatmap/400/300';
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-bold">{claimLog.code}</span>
+                      <span className={cn("px-2 py-0.5 text-[9px] font-bold text-white rounded", claimLog.status === 'REJECTED' ? 'bg-red-600' : 'bg-green-600')}>
+                        {claimLog.status === 'REJECTED' ? 'REJECT' : 'PASS'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-outline">{claimLog.name} • {claimLog.vendor}</p>
+                    <p className="text-[10px] text-outline mt-1">Target: {claimLog.target} | Actual: {claimLog.actual} | Variance: {claimLog.actual - claimLog.target} pcs</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSubmitClaim} className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-widest">Period Start</label>
+                    <input
+                      required
+                      type="date"
+                      value={claimForm.periodStart}
+                      onChange={e => setClaimForm({ ...claimForm, periodStart: e.target.value })}
+                      className="w-full bg-surface-container px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-widest">Period End</label>
+                    <input
+                      required
+                      type="date"
+                      value={claimForm.periodEnd}
+                      onChange={e => setClaimForm({ ...claimForm, periodEnd: e.target.value })}
+                      className="w-full bg-surface-container px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-outline uppercase tracking-widest">Claim Amount (IDR)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 2500000"
+                    value={claimForm.claimAmount}
+                    onChange={e => setClaimForm({ ...claimForm, claimAmount: e.target.value })}
+                    className="w-full bg-surface-container px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-outline uppercase tracking-widest">Notes</label>
+                  <textarea
+                    value={claimForm.notes}
+                    onChange={e => setClaimForm({ ...claimForm, notes: e.target.value })}
+                    className="w-full bg-surface-container px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2 border-t border-outline-variant/10">
+                  <button
+                    type="button"
+                    onClick={() => !claimSaving && setClaimLog(null)}
+                    disabled={claimSaving}
+                    className="px-4 py-2.5 rounded-xl font-medium text-sm text-outline hover:bg-surface-container-high transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={claimSaving}
+                    className="px-5 py-2.5 bg-tertiary text-white rounded-xl font-bold text-sm hover:bg-tertiary-container transition-all shadow-sm disabled:opacity-50 flex items-center gap-2 active:scale-95"
+                  >
+                    {claimSaving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                    {claimSaving ? 'Sending...' : 'Send Claim Request'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
