@@ -1,4 +1,4 @@
-export type Page = 'qc' | 'live' | 'master' | 'logs';
+export type Page = 'qc' | 'live' | 'master' | 'logs' | 'claims';
 
 export interface Part {
   code: string;
@@ -58,6 +58,8 @@ export interface NgReport {
   vendor_name?: string;
 }
 
+export type ClaimStatus = 'draft' | 'submitted' | 'under_review' | 'accepted' | 'rejected' | 'replacement_sent' | 'resolved';
+
 export interface ClaimReport {
   id: string;
   vendor_id: string;
@@ -67,9 +69,17 @@ export interface ClaimReport {
   total_inspected: number;
   total_ng: number;
   ng_rate_pct: number | null;
-  status: 'draft' | 'submitted' | 'acknowledged' | 'resolved' | 'disputed';
+  ng_category_breakdown: Record<string, number> | null;
+  part_breakdown: Record<string, any>[] | null;
+  status: ClaimStatus;
   claim_amount: number | null;
   currency: string;
+  report_url: string | null;
+  supporting_docs_urls: string[] | null;
+  generated_by: string | null;
+  generated_at: string;
+  submitted_at: string | null;
+  resolved_at: string | null;
   notes: string | null;
   vendor_name?: string;
 }

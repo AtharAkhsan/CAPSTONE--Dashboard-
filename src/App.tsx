@@ -32,7 +32,8 @@ import {
   Eye,
   Plus,
   Loader2,
-  PieChart
+  PieChart,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
@@ -41,6 +42,7 @@ import { supabase } from './lib/supabase';
 import { useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import QCAnalytics from './pages/QCAnalytics';
+import VendorClaims from './pages/VendorClaims';
 import {
   LineChart,
   Line,
@@ -87,6 +89,7 @@ const Sidebar = ({ activePage, setPage, isOpen }: { activePage: Page, setPage: (
     { id: 'live', label: 'Live Inspection', icon: Activity, internalOnly: true },
     { id: 'master', label: 'Master Data', icon: Database, internalOnly: true },
     { id: 'logs', label: 'Discrepancy Logs', icon: AlertCircle, internalOnly: false },
+    { id: 'claims', label: 'Claims', icon: FileText, internalOnly: false },
   ];
 
   const navItems = allNavItems.filter(item => !item.internalOnly || isInternal);
@@ -1175,7 +1178,7 @@ export default function App() {
   const { session, userProfile, loading: authLoading, isInternal } = useAuth();
 
   const isPage = (value: string | null): value is Page => {
-    return value === 'qc' || value === 'live' || value === 'master' || value === 'logs';
+    return value === 'qc' || value === 'live' || value === 'master' || value === 'logs' || value === 'claims';
   };
 
   const [currentPage, setCurrentPage] = useState<Page>(() => {
@@ -1275,6 +1278,7 @@ export default function App() {
       case 'live': return <LiveInspection logs={logs} setPage={setCurrentPage} />;
       case 'master': return <MasterData parts={parts} setParts={setParts} logs={logs} />;
       case 'logs': return <DiscrepancyLogs logs={logs} setLogs={setLogs} />;
+      case 'claims': return <VendorClaims />;
       default: return <QCAnalytics />;
     }
   };
