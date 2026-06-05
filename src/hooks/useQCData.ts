@@ -171,7 +171,7 @@ export function useQCData(): QCData {
   // Distribution data (pie/donut)
   const distributionData = useMemo(() => {
     const okCount = filteredVerificationLogs.filter(v => 
-      v.status.includes('VERIFIED') || v.status === 'PASSED'
+      v.status.includes('VERIFIED') || v.status === 'PASSED' || v.status === 'PASS'
     ).length;
     const ngCount = filteredNgReports.length;
     const claimFiled = filteredNgReports.filter(n => n.status === 'claim_filed').length;
@@ -179,7 +179,7 @@ export function useQCData(): QCData {
 
     return [
       { name: 'OK', value: okCount, color: '#004ac6' },
-      { name: 'NG', value: ngCount, color: '#ae0010' },
+      { name: 'Reject', value: ngCount, color: '#ae0010' },
       { name: 'Claim Filed', value: claimFiled, color: '#f59e0b' },
       { name: 'Resolved', value: resolved, color: '#10b981' },
     ];
@@ -297,20 +297,20 @@ export function useQCData(): QCData {
       items.push({
         id: 'ng-rate-high',
         type: 'warning',
-        title: 'NG Rate Tinggi',
-        message: `NG Rate saat ini ${ngRate.toFixed(1)}% — melebihi threshold ${NG_RATE_THRESHOLD}%`,
+        title: 'Reject Rate Tinggi',
+        message: `Reject Rate saat ini ${ngRate.toFixed(1)}% — melebihi threshold ${NG_RATE_THRESHOLD}%`,
         value: `${ngRate.toFixed(1)}%`,
       });
     }
 
-    // Many pending NG
+    // Many pending Reject
     const pendingCount = filteredNgReports.filter(n => n.status === 'pending').length;
     if (pendingCount > PENDING_ALERT_THRESHOLD) {
       items.push({
         id: 'pending-high',
         type: 'danger',
-        title: 'Banyak NG Pending',
-        message: `${pendingCount} laporan NG masih berstatus pending — segera tindak lanjuti`,
+        title: 'Banyak Reject Pending',
+        message: `${pendingCount} laporan reject masih berstatus pending — segera tindak lanjuti`,
         value: `${pendingCount}`,
       });
     }
@@ -328,13 +328,13 @@ export function useQCData(): QCData {
       });
     }
 
-    // Vendor with highest NG
+    // Vendor with highest Reject
     if (vendorNGData.length > 0 && vendorNGData[0].ngCount > 3) {
       items.push({
         id: 'vendor-high-ng',
         type: 'info',
-        title: 'Vendor dengan NG Tertinggi',
-        message: `${vendorNGData[0].vendor} memiliki ${vendorNGData[0].ngCount} laporan NG`,
+        title: 'Vendor dengan Reject Tertinggi',
+        message: `${vendorNGData[0].vendor} memiliki ${vendorNGData[0].ngCount} laporan reject`,
         value: vendorNGData[0].vendor,
       });
     }

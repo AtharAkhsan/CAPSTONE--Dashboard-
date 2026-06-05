@@ -71,7 +71,7 @@ export default function QCAnalytics() {
           <p className="text-outline text-sm mt-2 max-w-2xl">
             {isVendor
               ? `Monitoring kualitas untuk ${userProfile?.vendor_name || 'vendor Anda'}`
-              : 'Overview performa kualitas seluruh vendor — inspeksi, NG, dan claim monitoring.'
+              : 'Overview performa kualitas seluruh vendor — inspeksi, reject, dan claim monitoring.'
             }
           </p>
         </div>
@@ -152,11 +152,11 @@ export default function QCAnalytics() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             {[
               { label: 'Total Inspeksi', value: qc.totalInspections, icon: Activity, color: 'text-primary', bg: 'bg-primary/10' },
-              { label: 'Total NG', value: qc.totalNG, icon: XCircle, color: 'text-tertiary', bg: 'bg-tertiary/10' },
-              { label: 'NG Rate', value: `${qc.ngRate.toFixed(1)}%`, icon: AlertTriangle, color: qc.ngRate > 5 ? 'text-tertiary' : 'text-primary', bg: qc.ngRate > 5 ? 'bg-tertiary/10' : 'bg-primary/10' },
+              { label: 'Total Reject', value: qc.totalNG, icon: XCircle, color: 'text-tertiary', bg: 'bg-tertiary/10' },
+              { label: 'Reject Rate', value: `${qc.ngRate.toFixed(1)}%`, icon: AlertTriangle, color: qc.ngRate > 5 ? 'text-tertiary' : 'text-primary', bg: qc.ngRate > 5 ? 'bg-tertiary/10' : 'bg-primary/10' },
               { label: 'Total Claim', value: formatCurrency(qc.totalClaimAmount), icon: DollarSign, color: 'text-secondary', bg: 'bg-secondary/10' },
             ].map((card, i) => (
               <motion.div
@@ -164,13 +164,13 @@ export default function QCAnalytics() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="bg-surface-container-lowest rounded-2xl p-5 md:p-6 shadow-sm border border-outline-variant/10 relative overflow-hidden group hover:shadow-md transition-shadow"
+                className="bg-surface-container-lowest rounded-2xl p-4 md:p-6 shadow-sm border border-outline-variant/10 relative overflow-hidden group hover:shadow-md transition-shadow"
               >
-                <div className={cn("absolute top-4 right-4 p-2 rounded-xl", card.bg)}>
-                  <card.icon size={18} className={card.color} />
+                <div className={cn("absolute top-3 right-3 md:top-4 md:right-4 p-1.5 md:p-2 rounded-xl", card.bg)}>
+                  <card.icon size={16} className={cn(card.color, "md:w-[18px] md:h-[18px]")} />
                 </div>
-                <p className="text-[10px] text-outline uppercase font-bold tracking-widest">{card.label}</p>
-                <p className={cn("text-2xl md:text-3xl font-extrabold tracking-tighter mt-2", card.color)}>
+                <p className="text-[9px] md:text-[10px] text-outline uppercase font-bold tracking-widest pr-8">{card.label}</p>
+                <p className={cn("text-xl md:text-3xl font-extrabold tracking-tighter mt-1.5 md:mt-2", card.color)}>
                   {card.value}
                 </p>
               </motion.div>
@@ -269,9 +269,9 @@ export default function QCAnalytics() {
                 </h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={qc.sensorData}>
+                    <BarChart data={qc.sensorData.map((d, i) => ({ ...d, label: `${i + 1} (${d.timestamp})` }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="timestamp" tick={{ fontSize: 9 }} />
+                      <XAxis dataKey="label" tick={{ fontSize: 9 }} />
                       <YAxis tick={{ fontSize: 10 }} />
                       <Tooltip />
                       <Legend wrapperStyle={{ fontSize: 11 }} payload={[
@@ -288,11 +288,11 @@ export default function QCAnalytics() {
               </div>
             )}
 
-            {/* NG Category Distribution */}
+            {/* Reject Category Distribution */}
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
                 <BarChart3 size={16} className="text-tertiary" />
-                Distribusi Kategori NG
+                Distribusi Kategori Reject
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -301,7 +301,7 @@ export default function QCAnalytics() {
                     <XAxis type="number" tick={{ fontSize: 10 }} />
                     <YAxis type="category" dataKey="category" tick={{ fontSize: 9 }} width={130} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#ae0010" radius={[0, 4, 4, 0]} name="Jumlah NG">
+                    <Bar dataKey="count" fill="#ae0010" radius={[0, 4, 4, 0]} name="Jumlah Reject">
                       {qc.ngCategoryData.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
@@ -314,11 +314,11 @@ export default function QCAnalytics() {
 
           {/* Charts Row 3 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* NG Status Stacked */}
+            {/* Reject Status */}
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
                 <FileWarning size={16} className="text-amber-500" />
-                Status Penanganan NG
+                Status Penanganan Reject
               </h3>
               <div className="space-y-3 mt-4">
                 {qc.ngStatusData.map(item => {
@@ -326,7 +326,7 @@ export default function QCAnalytics() {
                   return (
                     <div key={item.status} className="space-y-1.5">
                       <div className="flex justify-between items-center">
-                        <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase", statusColor[item.status] || 'bg-gray-100 text-gray-600')}>
+                        <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase", statusColor[item.status] || 'bg-gray-100 text-gray-700')}>
                           {item.status.replace('_', ' ')}
                         </span>
                         <span className="text-sm font-bold">{item.count} <span className="text-outline font-normal text-xs">({pct.toFixed(0)}%)</span></span>
@@ -338,7 +338,7 @@ export default function QCAnalytics() {
                   );
                 })}
                 {qc.ngStatusData.length === 0 && (
-                  <p className="text-sm text-outline text-center py-8">Tidak ada data NG</p>
+                  <p className="text-sm text-outline text-center py-8">Tidak ada data reject</p>
                 )}
               </div>
             </div>
@@ -355,16 +355,16 @@ export default function QCAnalytics() {
                     <thead>
                       <tr className="border-b border-outline-variant/10">
                         <th className="pb-3 text-[10px] font-bold text-outline uppercase tracking-wider">Vendor</th>
-                        <th className="pb-3 text-[10px] font-bold text-outline uppercase tracking-wider">Period</th>
+                        <th className="pb-3 text-[10px] font-bold text-outline uppercase tracking-wider hidden md:table-cell">Period</th>
                         <th className="pb-3 text-[10px] font-bold text-outline uppercase tracking-wider text-right">Amount</th>
                         <th className="pb-3 text-[10px] font-bold text-outline uppercase tracking-wider text-center">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/10">
-                      {qc.claimReports.map(c => (
+                      {qc.claimReports.slice(0, 4).map((c) => (
                         <tr key={c.id} className="hover:bg-surface-container-low transition-colors">
                           <td className="py-3 text-xs font-medium">{c.vendor_name}</td>
-                          <td className="py-3 text-xs text-outline font-mono">{c.period_start?.slice(5)} — {c.period_end?.slice(5)}</td>
+                          <td className="py-3 text-xs text-outline font-mono hidden md:table-cell">{c.period_start?.slice(5)} — {c.period_end?.slice(5)}</td>
                           <td className="py-3 text-xs font-bold text-right">{formatCurrency(c.claim_amount || 0)}</td>
                           <td className="py-3 text-center">
                             <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold uppercase", statusColor[c.status] || 'bg-gray-100')}>
@@ -375,13 +375,16 @@ export default function QCAnalytics() {
                       ))}
                     </tbody>
                   </table>
+                  {qc.claimReports.length > 4 && (
+                    <p className="text-[10px] text-outline text-center pt-3 font-medium">+ {qc.claimReports.length - 4} more claims</p>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-outline text-center py-8">Tidak ada data claim</p>
               )}
               {/* Summary */}
               {qc.claimStatusData.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-outline-variant/10 flex flex-wrap gap-4">
+                <div className="mt-4 pt-4 border-t border-outline-variant/10 flex flex-wrap gap-3 md:gap-4">
                   {qc.claimStatusData.map(cs => (
                     <div key={cs.status} className="flex flex-col">
                       <span className="text-[9px] font-bold text-outline uppercase">{cs.status}</span>
@@ -394,28 +397,28 @@ export default function QCAnalytics() {
             </div>
           </div>
 
-          {/* Vendor NG Ranking (internal only) */}
+          {/* Vendor Reject Ranking (internal only) */}
           {isInternal && qc.vendorNGData.length > 0 && (
             <section className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
                 <BarChart3 size={16} className="text-primary" />
-                Vendor NG Ranking
+                Vendor Reject Ranking
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {qc.vendorNGData.map((v, i) => (
                   <div
                     key={v.vendor}
                     className={cn(
-                      "p-4 rounded-xl border transition-all",
+                      "p-3 md:p-4 rounded-xl border transition-all",
                       i === 0 ? "border-tertiary/30 bg-tertiary/5" : "border-outline-variant/10 bg-surface-container-low"
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold truncate mr-2">{v.vendor}</span>
+                      <span className="text-[10px] md:text-xs font-bold truncate mr-2">{v.vendor}</span>
                       {i === 0 && <AlertTriangle size={14} className="text-tertiary shrink-0" />}
                     </div>
-                    <p className="text-2xl font-extrabold tracking-tighter">{v.ngCount}</p>
-                    <p className="text-[10px] text-outline uppercase font-semibold">NG Reports</p>
+                    <p className="text-xl md:text-2xl font-extrabold tracking-tighter">{v.ngCount}</p>
+                    <p className="text-[9px] md:text-[10px] text-outline uppercase font-semibold">Reject Reports</p>
                   </div>
                 ))}
               </div>

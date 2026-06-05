@@ -34,7 +34,8 @@ import {
   Loader2,
   PieChart,
   FileText,
-  Send
+  Send,
+  ClipboardList
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
@@ -58,20 +59,9 @@ import {
 
 // --- Mock Data ---
 
-const MOCK_PARTS: Part[] = [
-  { code: 'SPR-0012', name: 'Spur Gear 2.5g', target: 100, actual: 99, unitWeight: '2.50 g', tolerance: '± 1 pc', vendor: 'PT. Jaya Presisi' },
-  { code: 'BGT-8841', name: 'Bearing Guide T-Series', target: 500, actual: 500, unitWeight: '12.45 g', tolerance: '± 5 pcs', vendor: 'Precision Dynamics Ltd.' },
-  { code: 'PIN-0922', name: 'Locking Pin 5mm', target: 2000, actual: 2000, unitWeight: '0.82 g', tolerance: '± 10 pcs', vendor: 'Global Fasteners Inc.' },
-  { code: 'HSK-2290', name: 'Alloy Housing Skirt', target: 50, actual: 50, unitWeight: '145.00 g', tolerance: '± 0 pc', vendor: 'Heavy Castings Corp.' },
-  { code: 'VLV-0032', name: 'Miniature Relief Valve', target: 250, actual: 250, unitWeight: '4.18 g', tolerance: '± 2 pcs', vendor: 'PT. Jaya Presisi' },
-];
+const MOCK_PARTS: Part[] = [];
 
-const MOCK_LOGS: LogEntry[] = [
-  { id: '1', timestamp: '2026-04-15 14:30:00', code: 'SPR-0012', name: 'Spur Gear 2.5g', target: 100, actual: 98, aiCount: 98, sensorWeight: '98.2g', status: 'REJECTED', unitWeight: '2.5g', tolerance: '± 1 pc', vendor: 'PT. Jaya Presisi' },
-  { id: '2', timestamp: '2026-04-15 14:12:45', code: 'PST-8821', name: 'Piston Seal Ring', target: 250, actual: 244, aiCount: 244, sensorWeight: '12.1kg', status: 'REJECTED', unitWeight: '50g', tolerance: '± 2 pcs', vendor: 'Precision Dynamics Ltd.' },
-  { id: '3', timestamp: '2026-04-15 13:55:10', code: 'BRG-400X', name: 'Ball Bearing Sleeve', target: 500, actual: 500, aiCount: 500, sensorWeight: '45.0kg', status: 'PASSED', unitWeight: '90g', tolerance: '± 5 pcs', vendor: 'Global Fasteners Inc.' },
-  { id: '4', timestamp: '2026-04-15 13:40:22', code: 'VLV-090', name: 'Micro-Valve Housing', target: 50, actual: 47, aiCount: 47, sensorWeight: '1.4kg', status: 'REJECTED', unitWeight: '30g', tolerance: '± 1 pc', vendor: 'Heavy Castings Corp.' },
-];
+const MOCK_LOGS: LogEntry[] = [];
 
 const LATENCY_DATA = [
   { time: '60m', val: 40 }, { time: '55m', val: 60 }, { time: '50m', val: 45 },
@@ -89,7 +79,8 @@ const Sidebar = ({ activePage, setPage, isOpen }: { activePage: Page, setPage: (
     { id: 'qc', label: 'QC Analytics', icon: PieChart, internalOnly: false },
     { id: 'live', label: 'Live Inspection', icon: Activity, internalOnly: true },
     { id: 'master', label: 'Master Data', icon: Database, internalOnly: true },
-    { id: 'logs', label: 'Discrepancy Logs', icon: AlertCircle, internalOnly: false },
+    { id: 'history', label: 'History', icon: ClipboardList, internalOnly: false },
+    { id: 'logs', label: 'Discrepancy Reports', icon: AlertCircle, internalOnly: false },
     { id: 'claims', label: 'Claims', icon: FileText, internalOnly: false },
   ];
 
@@ -416,7 +407,7 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
             <History size={18} className="text-primary" />
             Recent Inspection Logs
           </h3>
-          <button onClick={() => setPage('logs')} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+          <button onClick={() => setPage('history')} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
             View All History
             <ArrowRight size={14} />
           </button>
@@ -425,17 +416,19 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-container-high">
+                <th className="px-8 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">ID</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Timestamp</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Part Code</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Target</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Actual</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Detected</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Status</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-outline uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
-              {logs.slice(0, 3).map((log) => (
+              {logs.slice(0, 3).map((log, i) => (
                 <tr key={log.id} className="hover:bg-surface-container-low transition-colors">
+                  <td className="px-8 py-5 text-xs font-mono text-primary font-bold">{logs.length - i}</td>
                   <td className="px-8 py-5 text-sm font-mono text-outline">{log.timestamp.split(' ')[1]}</td>
                   <td className="px-8 py-5 text-sm font-bold">{log.code}</td>
                   <td className="px-8 py-5 text-sm font-medium">{log.target}</td>
@@ -699,26 +692,13 @@ const MasterData = ({ parts, setParts, logs }: { parts: Part[], setParts: React.
   );
 };
 
-const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>> }) => {
-  const { isInternal, isVendor, userProfile } = useAuth();
+const InspectionHistory = ({ logs }: { logs: LogEntry[] }) => {
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // Proof modal state
-  const [proofLog, setProofLog] = useState<LogEntry | null>(null);
-
-  // Claim form modal state (admin only)
-  const [claimLog, setClaimLog] = useState<LogEntry | null>(null);
-  const [claimForm, setClaimForm] = useState({
-    periodStart: '',
-    periodEnd: '',
-    claimAmount: '',
-    notes: '',
-  });
-  const [claimSaving, setClaimSaving] = useState(false);
-
-  // Filter logs based on date range and status
   const filteredLogs = React.useMemo(() => {
     let result = logs;
     if (dateStart) {
@@ -735,11 +715,17 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
     return result;
   }, [logs, dateStart, dateEnd, statusFilter]);
 
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1;
+  const paginatedLogs = filteredLogs.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [dateStart, dateEnd, statusFilter]);
+
   // Export filtered logs as CSV
   const handleExport = () => {
-    const headers = ['Timestamp', 'Part Code', 'Part Name', 'Target', 'Actual', 'AI Count', 'Sensor Weight', 'Status', 'Vendor'];
-    const rows = filteredLogs.map(l => [
-      l.timestamp, l.code, l.name, l.target, l.actual, l.aiCount, l.sensorWeight,
+    const headers = ['ID', 'Timestamp', 'Part Code', 'Part Name', 'Target', 'Detected', 'Sensor Weight', 'Status', 'Vendor'];
+    const rows = filteredLogs.map((l) => [
+      logs.length - logs.indexOf(l), l.timestamp, l.code, l.name, l.target, l.actual, l.sensorWeight,
       l.status === 'REJECTED' ? 'REJECT' : 'PASS', l.vendor
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
@@ -747,91 +733,17 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `inspection_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `inspection_history_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  // Open claim form with pre-filled data from the log
-  const openClaimForm = (log: LogEntry) => {
-    const today = new Date().toISOString().split('T')[0];
-    // Default period: start of month to today
-    const monthStart = today.substring(0, 7) + '-01';
-    setClaimForm({
-      periodStart: monthStart,
-      periodEnd: today,
-      claimAmount: '',
-      notes: `Discrepancy detected on ${log.code} (${log.name}) — Target: ${log.target}, Actual: ${log.actual}, Status: ${log.status}`,
-    });
-    setClaimLog(log);
-  };
-
-  // Submit claim to Supabase
-  const handleSubmitClaim = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!claimLog || claimSaving) return;
-    setClaimSaving(true);
-
-    try {
-      // Find vendor_id from the log
-      let vendorId = claimLog.vendor_id;
-      if (!vendorId) {
-        // Try to find vendor by name
-        const { data: vendorData } = await supabase
-          .from('vendors')
-          .select('id')
-          .eq('name', claimLog.vendor)
-          .limit(1)
-          .single();
-        vendorId = vendorData?.id;
-      }
-
-      if (!vendorId) {
-        alert('Vendor tidak ditemukan untuk log ini.');
-        setClaimSaving(false);
-        return;
-      }
-
-      const payload = {
-        vendor_id: vendorId,
-        period_start: claimForm.periodStart,
-        period_end: claimForm.periodEnd,
-        status: 'submitted',
-        total_inspected: claimLog.target,
-        total_ng: Math.abs(claimLog.actual - claimLog.target),
-        ng_rate_pct: claimLog.target > 0 ? Math.abs((claimLog.actual - claimLog.target) / claimLog.target * 100) : 0,
-        claim_amount: claimForm.claimAmount ? parseFloat(claimForm.claimAmount) : null,
-        notes: claimForm.notes || null,
-        report_url: claimLog.proofUrl || null,
-        generated_by: userProfile?.id || null,
-        submitted_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase.from('claim_reports').insert(payload);
-
-      if (error) {
-        console.error('Claim insert error:', error);
-        alert('Gagal membuat claim: ' + error.message);
-        return;
-      }
-
-      alert('Claim request berhasil dikirim ke vendor!');
-      setClaimLog(null);
-      setClaimForm({ periodStart: '', periodEnd: '', claimAmount: '', notes: '' });
-    } catch (err) {
-      console.error('Claim submission error:', err);
-      alert('Terjadi kesalahan saat mengirim claim.');
-    } finally {
-      setClaimSaving(false);
-    }
-  };
-
   return (
     <div className="space-y-8">
-      <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+      <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 md:gap-6">
         <div>
-          <h2 className="text-4xl font-bold tracking-tight">Inspection Logs</h2>
-          <p className="mt-2 text-outline font-medium">Monitoring manufacturing precision and batch compliance metrics.</p>
+          <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Inspection History</h2>
+          <p className="mt-1 md:mt-2 text-outline font-medium text-sm md:text-base">Complete record of all inspection results — both passed and rejected.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 bg-surface-container-low p-2 rounded-2xl">
           <div className="flex items-center gap-2 bg-surface-container-lowest px-3 py-2 rounded-xl shadow-sm">
@@ -869,26 +781,300 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
         </div>
       </section>
 
+      {/* Summary Stats */}
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
+        <div className="bg-surface-container-lowest rounded-2xl p-4 md:p-6 shadow-sm border border-outline-variant/10">
+          <p className="text-[9px] md:text-[10px] text-outline uppercase font-bold tracking-widest">Total Inspections</p>
+          <p className="text-2xl md:text-3xl font-bold tracking-tighter mt-1">{filteredLogs.length}</p>
+        </div>
+        <div className="bg-surface-container-lowest rounded-2xl p-4 md:p-6 shadow-sm border border-outline-variant/10">
+          <p className="text-[9px] md:text-[10px] text-green-600 uppercase font-bold tracking-widest">Passed</p>
+          <p className="text-2xl md:text-3xl font-bold tracking-tighter mt-1 text-green-600">{filteredLogs.filter(l => l.status !== 'REJECTED').length}</p>
+        </div>
+        <div className="bg-surface-container-lowest rounded-2xl p-4 md:p-6 shadow-sm border border-outline-variant/10">
+          <p className="text-[9px] md:text-[10px] text-tertiary uppercase font-bold tracking-widest">Rejected</p>
+          <p className="text-2xl md:text-3xl font-bold tracking-tighter mt-1 text-red-600">{filteredLogs.filter(l => l.status === 'REJECTED').length}</p>
+        </div>
+      </div>
+
+      {/* Table */}
+      <section className="w-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-surface-container-high">
+                <th className="px-4 md:px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">ID</th>
+                <th className="px-4 md:px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline hidden md:table-cell">Timestamp</th>
+                <th className="px-4 md:px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Part Info</th>
+                <th className="px-4 md:px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Target/Detected</th>
+                <th className="px-4 md:px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Status</th>
+                <th className="px-4 md:px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline hidden lg:table-cell">Vendor</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant/10">
+              {paginatedLogs.map((log, i) => (
+                <tr
+                  key={log.id}
+                  className="hover:bg-surface-container-low transition-colors"
+                >
+                  <td className="px-4 md:px-6 py-4 md:py-5 text-xs font-mono text-primary font-bold">{logs.length - logs.indexOf(log)}</td>
+                  <td className="px-4 md:px-6 py-4 md:py-5 text-sm font-medium text-outline hidden md:table-cell">{log.timestamp}</td>
+                  <td className="px-4 md:px-6 py-4 md:py-5">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold">{log.code}</span>
+                      <span className="text-xs text-outline">{log.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-5">
+                    <div className="text-sm font-mono flex items-center gap-2">
+                      <span className="text-outline">{log.target}</span>
+                      <span className="text-outline">/</span>
+                      <span className={cn("font-bold", log.status === 'REJECTED' ? "text-tertiary" : "text-green-600")}>{log.actual}</span>
+                    </div>
+                  </td>
+
+                  <td className="px-4 md:px-6 py-4 md:py-5">
+                    <span className={cn(
+                      "px-2 md:px-3 py-1 text-[9px] md:text-[10px] font-bold tracking-widest uppercase rounded",
+                      log.status === 'REJECTED' ? "bg-red-600 text-white" : "bg-green-600 text-white"
+                    )}>
+                      {log.status === 'REJECTED' ? 'REJECT' : 'PASS'}
+                    </span>
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-5 text-sm font-medium text-outline hidden lg:table-cell">{log.vendor}</td>
+                </tr>
+              ))}
+              {paginatedLogs.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-outline text-sm">
+                    No inspection records found for the selected filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {/* Pagination */}
+        <div className="px-4 md:px-8 py-4 md:py-5 flex items-center justify-between border-t border-outline-variant/10">
+          <p className="text-[10px] md:text-[11px] font-semibold text-outline uppercase">Showing <span className="text-on-surface">{filteredLogs.length > 0 ? (page - 1) * itemsPerPage + 1 : 0}-{Math.min(page * itemsPerPage, filteredLogs.length)}</span> of <span className="text-on-surface">{filteredLogs.length}</span></p>
+          <div className="flex gap-1 md:gap-2">
+            <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg border border-outline-variant/20 text-outline hover:bg-surface-container-low transition-colors disabled:opacity-50">
+              <ChevronRight size={14} className="rotate-180" />
+            </button>
+            <button className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg bg-primary text-on-primary text-[10px] md:text-[11px] font-bold">{page}</button>
+            <span className="px-1 md:px-2 self-center text-outline text-xs">/</span>
+            <button className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg text-[10px] md:text-[11px] font-bold text-outline">{totalPages}</button>
+            <button disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-lg border border-outline-variant/20 text-outline hover:bg-surface-container-low transition-colors disabled:opacity-50">
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { logs: LogEntry[], setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>, claimSentIds: Set<string>, setClaimSentIds: React.Dispatch<React.SetStateAction<Set<string>>> }) => {
+  const { isInternal, isVendor, userProfile } = useAuth();
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Proof modal state
+  const [proofLog, setProofLog] = useState<LogEntry | null>(null);
+
+
+
+  // Claim form modal state (admin only)
+  const [claimLog, setClaimLog] = useState<LogEntry | null>(null);
+  const [claimForm, setClaimForm] = useState({
+    periodStart: '',
+    periodEnd: '',
+    claimAmount: '',
+    notes: '',
+    vendorId: '',
+  });
+  const [claimSaving, setClaimSaving] = useState(false);
+
+  // Vendors list for dropdown
+  const [vendorsList, setVendorsList] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (isInternal) {
+      supabase.from('vendors').select('id, name').order('name').then(({ data }) => {
+        if (data) {
+          // Deduplicate by name
+          const unique = data.reduce((acc: { id: string; name: string }[], v: any) => {
+            if (!acc.find(x => x.name === v.name)) acc.push({ id: v.id, name: v.name });
+            return acc;
+          }, []);
+          setVendorsList(unique);
+        }
+      });
+    }
+  }, [isInternal]);
+
+  // Filter logs based on date range and status
+  // Discrepancy Reports only shows REJECTED logs
+  const filteredLogs = React.useMemo(() => {
+    let result = logs.filter(l => l.status === 'REJECTED');
+    if (dateStart) {
+      result = result.filter(l => l.timestamp >= dateStart);
+    }
+    if (dateEnd) {
+      result = result.filter(l => l.timestamp <= dateEnd + ' 23:59:59');
+    }
+    return result;
+  }, [logs, dateStart, dateEnd]);
+
+  // Export filtered logs as CSV
+  const handleExport = () => {
+    const headers = ['ID', 'Timestamp', 'Part Code', 'Part Name', 'Target', 'Detected', 'Sensor Weight', 'Status', 'Vendor'];
+    const rows = filteredLogs.map((l) => [
+      logs.length - logs.indexOf(l), l.timestamp, l.code, l.name, l.target, l.actual, l.sensorWeight,
+      l.status === 'REJECTED' ? 'REJECT' : 'PASS', l.vendor
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inspection_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Open claim form with pre-filled data from the log
+  const openClaimForm = (log: LogEntry) => {
+    const today = new Date().toISOString().split('T')[0];
+    // Default period: start of month to today
+    const monthStart = today.substring(0, 7) + '-01';
+    setClaimForm({
+      periodStart: monthStart,
+      periodEnd: today,
+      claimAmount: '',
+      notes: `Discrepancy detected on ${log.code} (${log.name}) — Target: ${log.target}, Detected: ${log.actual}, Status: ${log.status}`,
+      vendorId: log.vendor_id || '',
+    });
+    setClaimLog(log);
+  };
+
+  // Submit claim to Supabase
+  const handleSubmitClaim = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!claimLog || claimSaving) return;
+    setClaimSaving(true);
+
+    try {
+      // Get vendor_id: prefer form dropdown, then log, then lookup by name
+      let vendorId = claimForm.vendorId || claimLog.vendor_id;
+      if (!vendorId && claimLog.vendor && claimLog.vendor !== 'Unknown Vendor') {
+        const { data: vendorData } = await supabase
+          .from('vendors')
+          .select('id')
+          .eq('name', claimLog.vendor)
+          .limit(1)
+          .single();
+        vendorId = vendorData?.id;
+      }
+
+      if (!vendorId) {
+        alert('Silakan pilih vendor terlebih dahulu.');
+        setClaimSaving(false);
+        return;
+      }
+
+      const payload = {
+        vendor_id: vendorId,
+        period_start: claimForm.periodStart,
+        period_end: claimForm.periodEnd,
+        status: 'submitted',
+        total_inspected: claimLog.target,
+        total_ng: Math.abs(claimLog.actual - claimLog.target),
+        ng_rate_pct: claimLog.target > 0 ? Math.abs((claimLog.actual - claimLog.target) / claimLog.target * 100) : 0,
+        claim_amount: claimForm.claimAmount ? parseFloat(claimForm.claimAmount) : null,
+        notes: claimForm.notes || null,
+        report_url: claimLog.proofUrl || null,
+        supporting_docs_urls: { verification_log_id: claimLog.id },
+        generated_by: userProfile?.id || null,
+        submitted_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from('claim_reports').insert(payload);
+
+      if (error) {
+        console.error('Claim insert error:', error);
+        alert('Gagal membuat claim: ' + error.message);
+        return;
+      }
+
+      alert('Claim request berhasil dikirim ke vendor!');
+      // Mark this log as sent so the button gets disabled
+      setClaimSentIds(prev => new Set(prev).add(claimLog.id));
+      setClaimLog(null);
+      setClaimForm({ periodStart: '', periodEnd: '', claimAmount: '', notes: '', vendorId: '' });
+    } catch (err) {
+      console.error('Claim submission error:', err);
+      alert('Terjadi kesalahan saat mengirim claim.');
+    } finally {
+      setClaimSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-4xl font-bold tracking-tight">Discrepancy Reports</h2>
+          <p className="mt-2 text-outline font-medium">Rejected inspection logs requiring review and action.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 bg-surface-container-low p-2 rounded-2xl">
+          <div className="flex items-center gap-2 bg-surface-container-lowest px-3 py-2 rounded-xl shadow-sm">
+            <Activity size={16} className="text-primary" />
+            <input
+              type="date"
+              value={dateStart}
+              onChange={e => setDateStart(e.target.value)}
+              className="bg-transparent border-none text-sm font-medium focus:ring-0 p-0 w-[120px]"
+            />
+            <span className="text-outline text-xs">—</span>
+            <input
+              type="date"
+              value={dateEnd}
+              onChange={e => setDateEnd(e.target.value)}
+              className="bg-transparent border-none text-sm font-medium focus:ring-0 p-0 w-[120px]"
+            />
+          </div>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-on-surface text-white rounded-xl text-sm font-semibold hover:bg-on-surface/90 transition-all active:scale-95"
+          >
+            <Download size={16} />
+            Export
+          </button>
+        </div>
+      </section>
+
       {/* Table — full width, no sidebar */}
       <section className="w-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-container-high">
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">ID</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Timestamp</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Part Info</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Target/Actual</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline text-center">AI Count</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Target/Detected</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline">Status</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-outline text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
-              {filteredLogs.map((log) => (
+              {filteredLogs.map((log, i) => (
                 <tr
                   key={log.id}
                   className="hover:bg-surface-container-low transition-colors group"
                 >
+                  <td className="px-6 py-5 text-xs font-mono text-primary font-bold">{logs.length - logs.indexOf(log)}</td>
                   <td className="px-6 py-5 text-sm font-medium text-outline">{log.timestamp}</td>
                   <td className="px-6 py-5">
                     <div className="flex flex-col">
@@ -903,7 +1089,7 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
                       <span className={cn("font-bold", log.status === 'REJECTED' ? "text-tertiary" : "text-green-600")}>{log.actual}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-center text-sm font-medium">{log.aiCount}</td>
+
                   <td className="px-6 py-5">
                     <span className={cn(
                       "px-3 py-1 text-[10px] font-bold tracking-widest uppercase rounded",
@@ -922,14 +1108,23 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
                         <Eye size={14} />
                         Check Proof
                       </button>
-                      {/* Send Request — admin only */}
+                      {/* Send Request — admin only, disabled after sent */}
                       {isInternal && (
                         <button
-                          onClick={() => openClaimForm(log)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-tertiary/10 text-tertiary hover:bg-tertiary/20 transition-all active:scale-95"
+                          onClick={() => !claimSentIds.has(log.id) && openClaimForm(log)}
+                          disabled={claimSentIds.has(log.id)}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                            claimSentIds.has(log.id)
+                              ? "bg-surface-container-high text-outline cursor-not-allowed opacity-50"
+                              : "bg-tertiary/10 text-tertiary hover:bg-tertiary/20 active:scale-95"
+                          )}
                         >
-                          <Send size={14} />
-                          Send Request
+                          {claimSentIds.has(log.id) ? (
+                            <><CheckCircle2 size={14} /> Sent</>
+                          ) : (
+                            <><Send size={14} /> Send Request</>
+                          )}
                         </button>
                       )}
                     </div>
@@ -996,7 +1191,7 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
                     <span className="text-lg font-bold">{proofLog.target}</span>
                   </div>
                   <div className="flex flex-col items-center border-x border-outline-variant/10">
-                    <span className="text-[10px] text-outline font-medium">Actual</span>
+                    <span className="text-[10px] text-outline font-medium">Detected</span>
                     <span className={cn("text-lg font-bold", proofLog.status === 'REJECTED' ? 'text-red-600' : 'text-green-600')}>{proofLog.actual}</span>
                   </div>
                   <div className="flex flex-col items-center">
@@ -1009,7 +1204,7 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
                     <AlertTriangle size={20} className="text-tertiary shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-tertiary leading-tight">Count Mismatch Detected</p>
-                      <p className="text-[10px] text-tertiary/80 mt-1 leading-relaxed">Target quantity was {proofLog.target} units but actual count is {proofLog.actual} units — a discrepancy of {Math.abs(((proofLog.actual - proofLog.target) / proofLog.target * 100)).toFixed(1)}% which exceeds the 3% tolerance threshold.</p>
+                      <p className="text-[10px] text-tertiary/80 mt-1 leading-relaxed">Target quantity was {proofLog.target} units but detected count is {proofLog.actual} units — a discrepancy of {Math.abs(((proofLog.actual - proofLog.target) / proofLog.target * 100)).toFixed(1)}% which exceeds the 3% tolerance threshold.</p>
                     </div>
                   </div>
                 ) : (
@@ -1017,7 +1212,7 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
                     <CheckCircle2 size={20} className="text-primary shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-primary leading-tight">Inspection Passed</p>
-                      <p className="text-[10px] text-primary/80 mt-1 leading-relaxed">Target: {proofLog.target} units, Actual: {proofLog.actual} units. Variance within acceptable 3% tolerance.</p>
+                      <p className="text-[10px] text-primary/80 mt-1 leading-relaxed">Target: {proofLog.target} units, Detected: {proofLog.actual} units. Variance within acceptable 3% tolerance.</p>
                     </div>
                   </div>
                 )}
@@ -1072,13 +1267,29 @@ const DiscrepancyLogs = ({ logs, setLogs }: { logs: LogEntry[], setLogs: React.D
                       </span>
                     </div>
                     <p className="text-xs text-outline">{claimLog.name} • {claimLog.vendor}</p>
-                    <p className="text-[10px] text-outline mt-1">Target: {claimLog.target} | Actual: {claimLog.actual} | Variance: {claimLog.actual - claimLog.target} pcs</p>
+                    <p className="text-[10px] text-outline mt-1">Target: {claimLog.target} | Detected: {claimLog.actual} | Variance: {claimLog.actual - claimLog.target} pcs</p>
                   </div>
                 </div>
               </div>
 
               {/* Form */}
               <form onSubmit={handleSubmitClaim} className="p-6 space-y-4">
+                {/* Vendor Dropdown */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-outline uppercase tracking-widest">Vendor *</label>
+                  <select
+                    required
+                    value={claimForm.vendorId}
+                    onChange={e => setClaimForm({ ...claimForm, vendorId: e.target.value })}
+                    className="w-full bg-surface-container px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer"
+                  >
+                    <option value="">— Pilih Vendor —</option>
+                    {vendorsList.map(v => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-outline uppercase tracking-widest">Period Start</label>
@@ -1414,7 +1625,7 @@ export default function App() {
   const { session, userProfile, loading: authLoading, isInternal } = useAuth();
 
   const isPage = (value: string | null): value is Page => {
-    return value === 'qc' || value === 'live' || value === 'master' || value === 'logs' || value === 'claims';
+    return value === 'qc' || value === 'live' || value === 'master' || value === 'logs' || value === 'claims' || value === 'history';
   };
 
   const [currentPage, setCurrentPage] = useState<Page>(() => {
@@ -1431,6 +1642,7 @@ export default function App() {
   // Added global state for CRUD
   const [parts, setParts] = useState<Part[]>(MOCK_PARTS);
   const [logs, setLogs] = useState<LogEntry[]>(MOCK_LOGS);
+  const [claimSentIds, setClaimSentIds] = useState<Set<string>>(new Set());
 
   const loadData = async () => {
     try {
@@ -1489,10 +1701,24 @@ export default function App() {
             unitWeight: partInfo?.unitWeight || '',
             tolerance: partInfo?.tolerance || '',
             vendor: partInfo?.vendor || 'Unknown Vendor',
+            vendor_id: partInfo?.vendor_id,
             proofUrl: l.image_url || ''
           };
         });
         setLogs(formattedLogs.length > 0 ? formattedLogs : MOCK_LOGS);
+      }
+
+      // Load sent claim IDs to persist disabled request buttons across page refreshes
+      const { data: dbClaims } = await supabase.from('claim_reports').select('supporting_docs_urls');
+      if (dbClaims) {
+        const sentIds = new Set<string>();
+        dbClaims.forEach((c: any) => {
+          const doc = c.supporting_docs_urls;
+          if (doc && typeof doc === 'object' && doc.verification_log_id) {
+            sentIds.add(doc.verification_log_id);
+          }
+        });
+        setClaimSentIds(sentIds);
       }
 
     } catch (e) {
@@ -1513,7 +1739,8 @@ export default function App() {
       case 'qc': return <QCAnalytics />;
       case 'live': return <LiveInspection logs={logs} setPage={setCurrentPage} />;
       case 'master': return <MasterData parts={parts} setParts={setParts} logs={logs} />;
-      case 'logs': return <DiscrepancyLogs logs={logs} setLogs={setLogs} />;
+      case 'history': return <InspectionHistory logs={logs} />;
+      case 'logs': return <DiscrepancyLogs logs={logs} setLogs={setLogs} claimSentIds={claimSentIds} setClaimSentIds={setClaimSentIds} />;
       case 'claims': return <VendorClaims />;
       default: return <QCAnalytics />;
     }

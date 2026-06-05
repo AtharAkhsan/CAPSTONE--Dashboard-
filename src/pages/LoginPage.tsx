@@ -186,21 +186,24 @@ export default function LoginPage() {
               <p className="text-[10px] text-outline text-center uppercase tracking-widest font-bold">
                 Demo Credentials
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setEmail('admin@iqcprecision.com');
                     setPassword('Admin123!');
                   }}
-                  className="bg-surface-container hover:bg-surface-container-high px-3 py-2.5 rounded-xl text-left transition-colors border border-outline-variant/10"
+                  className="bg-surface-container hover:bg-surface-container-high px-3 py-2 rounded-xl text-left transition-colors border border-outline-variant/10 flex justify-between items-center"
                 >
-                  <span className="text-[10px] text-primary font-bold uppercase tracking-wider block">
-                    Admin
-                  </span>
-                  <span className="text-[10px] text-outline truncate block mt-0.5">
-                    admin@iqcprecision.com
-                  </span>
+                  <div>
+                    <span className="text-[10px] text-primary font-bold uppercase tracking-wider block">
+                      Admin
+                    </span>
+                    <span className="text-[10px] text-outline truncate block mt-0.5">
+                      admin@iqcprecision.com
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-outline-variant bg-surface px-2 py-0.5 rounded">Admin123!</span>
                 </button>
                 <button
                   type="button"
@@ -208,14 +211,35 @@ export default function LoginPage() {
                     setEmail('vendor@jayapresisi.com');
                     setPassword('Vendor123!');
                   }}
-                  className="bg-surface-container hover:bg-surface-container-high px-3 py-2.5 rounded-xl text-left transition-colors border border-outline-variant/10"
+                  className="bg-surface-container hover:bg-surface-container-high px-3 py-2 rounded-xl text-left transition-colors border border-outline-variant/10 flex justify-between items-center"
                 >
-                  <span className="text-[10px] text-secondary font-bold uppercase tracking-wider block">
-                    Vendor
-                  </span>
-                  <span className="text-[10px] text-outline truncate block mt-0.5">
-                    vendor@jayapresisi.com
-                  </span>
+                  <div>
+                    <span className="text-[10px] text-secondary font-bold uppercase tracking-wider block">
+                      Vendor (Jaya Presisi)
+                    </span>
+                    <span className="text-[10px] text-outline truncate block mt-0.5">
+                      vendor@jayapresisi.com
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-outline-variant bg-surface px-2 py-0.5 rounded">Vendor123!</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('vendor@whyfi.com');
+                    setPassword('Vendor123!');
+                  }}
+                  className="bg-surface-container hover:bg-surface-container-high px-3 py-2 rounded-xl text-left transition-colors border border-outline-variant/10 flex justify-between items-center"
+                >
+                  <div>
+                    <span className="text-[10px] text-tertiary font-bold uppercase tracking-wider block">
+                      Vendor (Why-Fi)
+                    </span>
+                    <span className="text-[10px] text-outline truncate block mt-0.5">
+                      vendor@whyfi.com
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-outline-variant bg-surface px-2 py-0.5 rounded">Vendor123!</span>
                 </button>
               </div>
             </div>

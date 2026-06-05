@@ -1,4 +1,4 @@
-export type Page = 'qc' | 'live' | 'master' | 'logs' | 'claims';
+export type Page = 'qc' | 'live' | 'master' | 'logs' | 'claims' | 'history';
 
 export interface Part {
   code: string;
