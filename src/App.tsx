@@ -393,9 +393,6 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
                 <div className="w-16 h-1 mx-auto bg-white/30 rounded-full" />
               </div>
             </div>
-            <button className="mt-8 w-full py-4 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-[0.2em] rounded-xl transition-all border border-white/20 backdrop-blur-sm">
-              Flag for Manual Review
-            </button>
           </div>
         </div>
       </div>
