@@ -62,7 +62,7 @@ export default function QCAnalytics() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+
       <section className="bg-surface-container-lowest rounded-2xl p-6 md:p-8 shadow-sm border border-outline-variant/10 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-full bg-primary/5 -skew-x-12 translate-x-32" />
         <div className="relative z-10">
@@ -77,7 +77,7 @@ export default function QCAnalytics() {
         </div>
       </section>
 
-      {/* Filter Bar */}
+
       <section className="bg-surface-container-lowest rounded-2xl p-4 md:p-6 shadow-sm border border-outline-variant/10">
         <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
           <div className="flex items-center gap-3 shrink-0">
@@ -145,7 +145,7 @@ export default function QCAnalytics() {
         </div>
       </section>
 
-      {/* KPI Summary Cards */}
+
       {qc.loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -177,7 +177,7 @@ export default function QCAnalytics() {
             ))}
           </div>
 
-          {/* Alerts Panel */}
+
           {qc.alerts.length > 0 && (
             <section className="space-y-3">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -206,9 +206,9 @@ export default function QCAnalytics() {
             </section>
           )}
 
-          {/* Charts Row 1 */}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Distribution Pie */}
+
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
                 <PieChartIcon size={16} className="text-primary" />
@@ -238,7 +238,7 @@ export default function QCAnalytics() {
               </div>
             </div>
 
-            {/* Trend Discrepancy Line */}
+
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
                 <TrendingUp size={16} className="text-primary" />
@@ -258,9 +258,9 @@ export default function QCAnalytics() {
             </div>
           </div>
 
-          {/* Charts Row 2 */}
+
           <div className={cn("grid grid-cols-1 gap-6", isInternal ? "lg:grid-cols-2" : "")}>
-            {/* Sensor Comparison (internal only) */}
+
             {isInternal && (
               <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
                 <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
@@ -288,7 +288,7 @@ export default function QCAnalytics() {
               </div>
             )}
 
-            {/* Reject Category Distribution */}
+
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
                 <BarChart3 size={16} className="text-tertiary" />
@@ -312,9 +312,9 @@ export default function QCAnalytics() {
             </div>
           </div>
 
-          {/* Charts Row 3 */}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Reject Status */}
+
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
                 <FileWarning size={16} className="text-amber-500" />
@@ -343,7 +343,7 @@ export default function QCAnalytics() {
               </div>
             </div>
 
-            {/* Claim Monitoring */}
+
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">
                 <DollarSign size={16} className="text-secondary" />
@@ -382,7 +382,7 @@ export default function QCAnalytics() {
               ) : (
                 <p className="text-sm text-outline text-center py-8">Tidak ada data claim</p>
               )}
-              {/* Summary */}
+
               {qc.claimStatusData.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-outline-variant/10 flex flex-wrap gap-3 md:gap-4">
                   {qc.claimStatusData.map(cs => (
@@ -397,7 +397,7 @@ export default function QCAnalytics() {
             </div>
           </div>
 
-          {/* Vendor Reject Ranking (internal only) */}
+
           {isInternal && qc.vendorNGData.length > 0 && (
             <section className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-6">

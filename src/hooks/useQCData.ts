@@ -17,12 +17,12 @@ interface QCData {
   filters: FilterState;
   setFilters: (filters: FilterState) => void;
   resetFilters: () => void;
-  // Computed KPIs
+
   totalInspections: number;
   totalNG: number;
   ngRate: number;
   totalClaimAmount: number;
-  // Chart data
+
   distributionData: { name: string; value: number; color: string }[];
   trendData: { date: string; avgDiffPct: number }[];
   sensorData: { timestamp: string; ai_count: number; load_cell_count: number; final_count: number }[];
@@ -61,7 +61,7 @@ export function useQCData(): QCData {
     setFiltersState(DEFAULT_FILTERS);
   }, []);
 
-  // Fetch all data
+
   const userProfileId = userProfile?.id;
   useEffect(() => {
     if (!userProfileId) return;
@@ -69,12 +69,12 @@ export function useQCData(): QCData {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch verification_logs
+
         let vQuery = supabase.from('verification_logs').select('*').order('timestamp', { ascending: false });
         const { data: vLogs } = await vQuery;
         setVerificationLogs((vLogs || []) as VerificationLog[]);
 
-        // Fetch ng_reports (RLS handles vendor filtering)
+
         let ngQuery = supabase.from('ng_reports').select('*, vendors(name)').order('inspected_at', { ascending: false });
         const { data: ngData } = await ngQuery;
         setNgReports(
@@ -84,7 +84,7 @@ export function useQCData(): QCData {
           }))
         );
 
-        // Fetch claim_reports (RLS handles vendor filtering)
+
         let claimQuery = supabase.from('claim_reports').select('*, vendors(name)').order('report_date', { ascending: false });
         const { data: claimData } = await claimQuery;
         setClaimReports(
@@ -94,10 +94,10 @@ export function useQCData(): QCData {
           }))
         );
 
-        // Fetch vendors (for filter dropdown)
+
         if (!isVendor) {
           const { data: vendorData } = await supabase.from('vendors').select('id, name').order('name');
-          // Deduplicate by name
+
           const uniqueVendors = (vendorData || []).reduce((acc: VendorOption[], v: any) => {
             if (!acc.find(x => x.name === v.name)) acc.push({ id: v.id, name: v.name });
             return acc;
@@ -114,7 +114,7 @@ export function useQCData(): QCData {
     fetchData();
   }, [userProfileId, isVendor]);
 
-  // Filtered data
+
   const filteredVerificationLogs = useMemo(() => {
     let data = verificationLogs;
     if (filters.dateStart) {
@@ -162,13 +162,13 @@ export function useQCData(): QCData {
     return data;
   }, [claimReports, filters]);
 
-  // KPIs
+
   const totalInspections = filteredVerificationLogs.length;
   const totalNG = filteredNgReports.length;
   const ngRate = totalInspections > 0 ? (totalNG / totalInspections) * 100 : 0;
   const totalClaimAmount = filteredClaimReports.reduce((sum, c) => sum + (c.claim_amount || 0), 0);
 
-  // Distribution data (pie/donut)
+
   const distributionData = useMemo(() => {
     const okCount = filteredVerificationLogs.filter(v => 
       v.status.includes('VERIFIED') || v.status === 'PASSED' || v.status === 'PASS'
@@ -185,7 +185,7 @@ export function useQCData(): QCData {
     ];
   }, [filteredVerificationLogs, filteredNgReports]);
 
-  // Trend data (line chart)
+
   const trendData = useMemo(() => {
     const grouped = filteredVerificationLogs.reduce((acc: Record<string, number[]>, log) => {
       const date = log.timestamp.split('T')[0] || log.timestamp.split(' ')[0];
@@ -202,10 +202,10 @@ export function useQCData(): QCData {
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [filteredVerificationLogs]);
 
-  // Sensor comparison data
+
   const sensorData = useMemo(() => {
     return filteredVerificationLogs.slice(0, 20).map(log => {
-      // Convert UTC timestamp to WIB (GMT+7)
+
       const rawDate = new Date(log.timestamp);
       let timeLabel = '';
       if (!isNaN(rawDate.getTime())) {
@@ -223,7 +223,7 @@ export function useQCData(): QCData {
     }).reverse();
   }, [filteredVerificationLogs]);
 
-  // NG category distribution
+
   const ngCategoryData = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredNgReports.forEach(ng => {
@@ -234,7 +234,7 @@ export function useQCData(): QCData {
       .sort((a, b) => b.count - a.count);
   }, [filteredNgReports]);
 
-  // NG status distribution
+
   const ngStatusData = useMemo(() => {
     const statusColors: Record<string, string> = {
       pending: '#f59e0b',
@@ -253,7 +253,7 @@ export function useQCData(): QCData {
     }));
   }, [filteredNgReports]);
 
-  // Claim status overview
+
   const claimStatusData = useMemo(() => {
     const grouped: Record<string, { count: number; amount: number }> = {};
     filteredClaimReports.forEach(c => {
@@ -268,7 +268,7 @@ export function useQCData(): QCData {
     }));
   }, [filteredClaimReports]);
 
-  // Vendor NG ranking
+
   const vendorNGData = useMemo(() => {
     const vendorCounts: Record<string, { name: string; ngCount: number }> = {};
     filteredNgReports.forEach(ng => {
@@ -288,11 +288,11 @@ export function useQCData(): QCData {
       .sort((a, b) => b.ngCount - a.ngCount);
   }, [filteredNgReports, totalInspections]);
 
-  // Alerts
+
   const alerts = useMemo(() => {
     const items: AlertItem[] = [];
 
-    // NG Rate > threshold
+
     if (ngRate > NG_RATE_THRESHOLD) {
       items.push({
         id: 'ng-rate-high',
@@ -303,7 +303,7 @@ export function useQCData(): QCData {
       });
     }
 
-    // Many pending Reject
+
     const pendingCount = filteredNgReports.filter(n => n.status === 'pending').length;
     if (pendingCount > PENDING_ALERT_THRESHOLD) {
       items.push({
@@ -315,7 +315,7 @@ export function useQCData(): QCData {
       });
     }
 
-    // Diff pct anomaly
+
     const recentLogs = filteredVerificationLogs.slice(0, 10);
     const highDiffLogs = recentLogs.filter(l => Math.abs(l.diff_pct) > DIFF_PCT_ANOMALY_THRESHOLD);
     if (highDiffLogs.length > 0) {
@@ -328,7 +328,7 @@ export function useQCData(): QCData {
       });
     }
 
-    // Vendor with highest Reject
+
     if (vendorNGData.length > 0 && vendorNGData[0].ngCount > 3) {
       items.push({
         id: 'vendor-high-ng',

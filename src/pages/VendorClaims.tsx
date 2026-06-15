@@ -25,7 +25,7 @@ import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 import type { ClaimReport, ClaimStatus, NgReport } from '../types';
 
-// ─── Helpers ────────────────────────────────────────────────────────
+
 
 const formatCurrency = (val: number | null) => {
   if (!val) return 'Rp 0';
@@ -56,7 +56,7 @@ const STATUS_CONFIG: Record<ClaimStatus, StatusConfig> = {
   resolved: { label: 'Resolved', bg: 'bg-emerald-100 text-emerald-700', icon: <PackageCheck size={14} />, description: 'Claim telah selesai' },
 };
 
-// Workflow: which statuses can transition to which
+
 const VENDOR_TRANSITIONS: Partial<Record<ClaimStatus, { next: ClaimStatus[]; labels: Partial<Record<ClaimStatus, string>> }>> = {
   submitted: {
     next: ['under_review', 'accepted', 'rejected'],
@@ -84,7 +84,7 @@ const TRANSITION_COLORS: Partial<Record<ClaimStatus, string>> = {
   resolved: 'bg-emerald-600 hover:bg-emerald-700 text-white',
 };
 
-// ─── Workflow Steps Visual ──────────────────────────────────────────
+
 
 const WORKFLOW_STEPS: ClaimStatus[] = ['submitted', 'under_review', 'accepted', 'replacement_sent', 'resolved'];
 
@@ -130,7 +130,7 @@ function WorkflowStepper({ currentStatus }: { currentStatus: ClaimStatus }) {
   );
 }
 
-// ─── Main Component ─────────────────────────────────────────────────
+
 
 export default function VendorClaims() {
   const { userProfile, isInternal, isVendor } = useAuth();
@@ -140,17 +140,17 @@ export default function VendorClaims() {
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
 
-  // Detail modal state
+
   const [selectedClaim, setSelectedClaim] = useState<ClaimReport | null>(null);
   const [ngReports, setNgReports] = useState<NgReport[]>([]);
   const [loadingNg, setLoadingNg] = useState(false);
 
-  // Action modal state
+
   const [actionTarget, setActionTarget] = useState<{ claim: ClaimReport; nextStatus: ClaimStatus } | null>(null);
   const [actionNotes, setActionNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  // ─── Fetch Claims ───────────────────────────────────────────────
+
   const fetchClaims = useCallback(async () => {
     setLoading(true);
     try {
@@ -181,7 +181,7 @@ export default function VendorClaims() {
     fetchClaims();
   }, [fetchClaims]);
 
-  // ─── Fetch NG Reports for a claim ──────────────────────────────
+
   const fetchNgReports = useCallback(async (claim: ClaimReport) => {
     setLoadingNg(true);
     try {
@@ -212,7 +212,7 @@ export default function VendorClaims() {
     }
   }, []);
 
-  // When a claim is selected, fetch its NG reports
+
   useEffect(() => {
     if (selectedClaim) {
       fetchNgReports(selectedClaim);
@@ -221,7 +221,7 @@ export default function VendorClaims() {
     }
   }, [selectedClaim, fetchNgReports]);
 
-  // ─── Handle Status Transition ──────────────────────────────────
+
   const handleStatusChange = async () => {
     if (!actionTarget) return;
     setActionLoading(true);
@@ -231,7 +231,7 @@ export default function VendorClaims() {
         status: actionTarget.nextStatus,
       };
 
-      // Append vendor notes
+
       if (actionNotes.trim()) {
         const existingNotes = actionTarget.claim.notes || '';
         const timestamp = new Date().toLocaleString('id-ID');
@@ -239,7 +239,7 @@ export default function VendorClaims() {
         updatePayload.notes = existingNotes + vendorNote;
       }
 
-      // Set resolved_at if resolving
+
       if (actionTarget.nextStatus === 'resolved') {
         updatePayload.resolved_at = new Date().toISOString();
       }
@@ -255,10 +255,10 @@ export default function VendorClaims() {
         return;
       }
 
-      // Refresh claims
+
       await fetchClaims();
 
-      // Update selected claim if open
+
       if (selectedClaim?.id === actionTarget.claim.id) {
         setSelectedClaim(prev => prev ? { ...prev, status: actionTarget.nextStatus, notes: updatePayload.notes || prev.notes } : null);
       }
@@ -273,7 +273,7 @@ export default function VendorClaims() {
     }
   };
 
-  // ─── Filtered Data ─────────────────────────────────────────────
+
   const filteredClaims = useMemo(() => {
     let data = claims;
     if (statusFilter !== 'all') {
@@ -288,7 +288,7 @@ export default function VendorClaims() {
     return data;
   }, [claims, statusFilter, dateStart, dateEnd]);
 
-  // ─── KPI Calculations ─────────────────────────────────────────
+
   const kpi = useMemo(() => {
     const totalClaims = filteredClaims.length;
     const totalAmount = filteredClaims.reduce((s, c) => s + (c.claim_amount || 0), 0);
@@ -297,13 +297,13 @@ export default function VendorClaims() {
     return { totalClaims, totalAmount, pendingActions, resolvedClaims };
   }, [filteredClaims]);
 
-  // Pagination
+
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
   const totalPages = Math.ceil(filteredClaims.length / itemsPerPage) || 1;
   const paginatedClaims = filteredClaims.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  // Reset page when filter changes
+
   useEffect(() => { setPage(1); }, [statusFilter, dateStart, dateEnd]);
 
   const resetFilters = () => {
@@ -312,10 +312,10 @@ export default function VendorClaims() {
     setDateEnd('');
   };
 
-  // ─── Render ────────────────────────────────────────────────────
+
   return (
     <div className="space-y-8">
-      {/* Header */}
+
       <section className="bg-surface-container-lowest rounded-2xl p-6 md:p-8 shadow-sm border border-outline-variant/10 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-full bg-primary/5 -skew-x-12 translate-x-32" />
         <div className="relative z-10">
@@ -329,7 +329,7 @@ export default function VendorClaims() {
         </div>
       </section>
 
-      {/* KPI Cards */}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {[
           { label: 'Total Claims', value: kpi.totalClaims, icon: FileText, color: 'text-primary', bg: 'bg-primary/10' },
@@ -355,7 +355,7 @@ export default function VendorClaims() {
         ))}
       </div>
 
-      {/* Filter Bar */}
+
       <section className="bg-surface-container-lowest rounded-2xl p-4 md:p-6 shadow-sm border border-outline-variant/10">
         <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
           <div className="flex items-center gap-3 shrink-0">
@@ -408,7 +408,7 @@ export default function VendorClaims() {
         </div>
       </section>
 
-      {/* Claims Table */}
+
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
@@ -512,7 +512,7 @@ export default function VendorClaims() {
             </table>
           </div>
 
-          {/* Pagination */}
+
           <div className="px-6 py-4 flex items-center justify-between border-t border-outline-variant/10">
             <p className="text-[11px] font-semibold text-outline uppercase">
               Showing <span className="text-on-surface">{(page - 1) * itemsPerPage + 1}–{Math.min(page * itemsPerPage, filteredClaims.length)}</span> of <span className="text-on-surface">{filteredClaims.length}</span> claims
@@ -540,7 +540,7 @@ export default function VendorClaims() {
         </section>
       )}
 
-      {/* ══════════ Detail Modal ══════════ */}
+
       <AnimatePresence>
         {selectedClaim && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelectedClaim(null)}>
@@ -552,7 +552,7 @@ export default function VendorClaims() {
               className="bg-surface-container-lowest w-full max-w-3xl max-h-[85vh] rounded-2xl shadow-2xl border border-outline-variant/20 overflow-hidden flex flex-col"
               onClick={e => e.stopPropagation()}
             >
-              {/* Modal Header */}
+
               <div className="p-6 md:p-8 border-b border-outline-variant/10 shrink-0">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -581,15 +581,15 @@ export default function VendorClaims() {
                   </button>
                 </div>
 
-                {/* Workflow Stepper */}
+
                 <div className="mt-4">
                   <WorkflowStepper currentStatus={selectedClaim.status} />
                 </div>
               </div>
 
-              {/* Modal Body */}
+
               <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
-                {/* Claim Info Grid */}
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-surface-container-low p-4 rounded-xl">
                     <p className="text-[10px] text-outline uppercase font-bold tracking-widest">Total Inspected</p>
@@ -613,7 +613,7 @@ export default function VendorClaims() {
                   </div>
                 </div>
 
-                {/* Notes from Admin */}
+
                 {selectedClaim.notes && (
                   <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
                     <div className="flex items-center gap-2 mb-2">
@@ -624,7 +624,7 @@ export default function VendorClaims() {
                   </div>
                 )}
 
-                {/* NG Reports Linked */}
+
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2 mb-4">
                     <ShieldAlert size={16} className="text-tertiary" />
@@ -679,7 +679,7 @@ export default function VendorClaims() {
                   )}
                 </div>
 
-                {/* Vendor Actions */}
+
                 {isVendor && VENDOR_TRANSITIONS[selectedClaim.status] && (
                   <div className="bg-surface-container-low p-5 rounded-xl border border-outline-variant/20">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-on-surface mb-3 flex items-center gap-2">
@@ -712,7 +712,7 @@ export default function VendorClaims() {
         )}
       </AnimatePresence>
 
-      {/* ══════════ Action Confirmation Modal ══════════ */}
+
       <AnimatePresence>
         {actionTarget && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => !actionLoading && setActionTarget(null)}>

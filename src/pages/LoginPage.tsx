@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-surface flex relative overflow-hidden">
-      {/* Background decorations */}
+
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/5 rounded-full translate-y-1/3 -translate-x-1/4" />
@@ -44,7 +44,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Left decorative panel - hidden on mobile */}
+
       <div className="hidden lg:flex flex-col justify-center flex-1 px-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
@@ -91,7 +91,7 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Right login panel */}
+
       <div className="flex-1 flex items-center justify-center p-6 lg:p-16 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -99,7 +99,7 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          {/* Mobile logo */}
+
           <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
               <ShieldCheck className="text-white" size={20} />

@@ -57,7 +57,7 @@ import {
   Bar
 } from 'recharts';
 
-// --- Mock Data ---
+
 
 const MOCK_PARTS: Part[] = [];
 
@@ -70,7 +70,7 @@ const LATENCY_DATA = [
   { time: '15m', val: 55 }, { time: '10m', val: 40 }, { time: '5m', val: 35 },
 ];
 
-// --- Components ---
+
 
 const Sidebar = ({ activePage, setPage, isOpen }: { activePage: Page, setPage: (p: Page) => void, isOpen: boolean }) => {
   const { userProfile, isInternal, signOut } = useAuth();
@@ -172,7 +172,7 @@ const TopBar = ({ title, onMenuClick }: { title: string, onMenuClick: () => void
   );
 };
 
-// --- Page Components ---
+
 
 const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page) => void }) => {
   const [telemetry, setTelemetry] = useState({
@@ -193,17 +193,17 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
   const [frameUrl, setFrameUrl] = useState<string>('https://picsum.photos/seed/gears/800/450');
 
   useEffect(() => {
-    // Polling camera snapshot every 1.5 seconds
+
     const fetchCameraFrame = () => {
       const { data } = supabase.storage.from('camera_snapshots').getPublicUrl('latest_frame.jpg');
       setFrameUrl(`${data.publicUrl}?t=${new Date().getTime()}`);
     };
 
-    // Initial fetch
+
     fetchCameraFrame();
     const frameInterval = setInterval(fetchCameraFrame, 1500);
 
-    // 1. Fetch initial latest telemetry from the table
+
     const fetchLatestTelemetry = async () => {
       try {
         const { data, error } = await supabase
@@ -236,7 +236,7 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
 
     fetchLatestTelemetry();
 
-    // 2. Subscribe to Supabase Postgres changes (INSERT events on telemetry_logs)
+
     const channel = supabase.channel('telemetry_db_changes')
       .on(
         'postgres_changes',
@@ -269,7 +269,7 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
 
   return (
     <div className="space-y-8">
-      {/* Header Panel */}
+
       <section className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm border border-outline-variant/10 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-full bg-primary/5 -skew-x-12 translate-x-32" />
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
@@ -311,9 +311,9 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
         </div>
       </section>
 
-      {/* Monitoring Grid */}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Visual AI */}
+
         <div className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10 flex flex-col">
           <div className="p-6 flex justify-between items-center border-b border-outline-variant/10">
             <div className="flex items-center gap-2">
@@ -328,7 +328,7 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
               className="absolute inset-0 w-full h-full object-cover opacity-60"
               referrerPolicy="no-referrer"
               onError={(e) => {
-                // Fallback to placeholder if storage file is missing
+
                 (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/gears/800/450';
               }}
             />
@@ -351,7 +351,7 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
           </div>
         </div>
 
-        {/* Sensors & Decision */}
+
         <div className="space-y-8">
           <div className="bg-surface-container-lowest p-8 rounded-2xl shadow-sm border border-outline-variant/10 relative overflow-hidden">
             <div className="flex justify-between items-start mb-6">
@@ -397,7 +397,7 @@ const LiveInspection = ({ logs, setPage }: { logs: LogEntry[], setPage: (p: Page
         </div>
       </div>
 
-      {/* Logs Table */}
+
       <section className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
         <div className="px-8 py-6 border-b border-outline-variant/10 flex justify-between items-center">
           <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
@@ -503,7 +503,7 @@ const MasterData = ({ parts, setParts, logs }: { parts: Part[], setParts: React.
       const weight_tolerance_gram = parseFloat(formData.tolerance?.replace(/[^\d.]/g, '') || '0');
       const vendorName = formData.vendor || 'Unknown Vendor';
 
-      // Upsert vendor
+
       let vendor_id = '';
       const { data: vExist } = await supabase.from('vendors').select('id').eq('name', vendorName).single();
       if (vExist) vendor_id = vExist.id;
@@ -629,7 +629,7 @@ const MasterData = ({ parts, setParts, logs }: { parts: Part[], setParts: React.
         </div>
       </section>
 
-      {/* Parts Modal */}
+
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -715,10 +715,10 @@ const InspectionHistory = ({ logs }: { logs: LogEntry[] }) => {
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1;
   const paginatedLogs = filteredLogs.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  // Reset to page 1 when filters change
+
   useEffect(() => { setPage(1); }, [dateStart, dateEnd, statusFilter]);
 
-  // Export filtered logs as CSV
+
   const handleExport = () => {
     const headers = ['ID', 'Timestamp', 'Part Code', 'Part Name', 'Target', 'Detected', 'Sensor Weight', 'Status', 'Vendor'];
     const rows = filteredLogs.map((l) => [
@@ -778,7 +778,7 @@ const InspectionHistory = ({ logs }: { logs: LogEntry[] }) => {
         </div>
       </section>
 
-      {/* Summary Stats */}
+
       <div className="grid grid-cols-3 gap-3 md:gap-4">
         <div className="bg-surface-container-lowest rounded-2xl p-4 md:p-6 shadow-sm border border-outline-variant/10">
           <p className="text-[9px] md:text-[10px] text-outline uppercase font-bold tracking-widest">Total Inspections</p>
@@ -794,7 +794,7 @@ const InspectionHistory = ({ logs }: { logs: LogEntry[] }) => {
         </div>
       </div>
 
-      {/* Table */}
+
       <section className="w-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -851,7 +851,7 @@ const InspectionHistory = ({ logs }: { logs: LogEntry[] }) => {
             </tbody>
           </table>
         </div>
-        {/* Pagination */}
+
         <div className="px-4 md:px-8 py-4 md:py-5 flex items-center justify-between border-t border-outline-variant/10">
           <p className="text-[10px] md:text-[11px] font-semibold text-outline uppercase">Showing <span className="text-on-surface">{filteredLogs.length > 0 ? (page - 1) * itemsPerPage + 1 : 0}-{Math.min(page * itemsPerPage, filteredLogs.length)}</span> of <span className="text-on-surface">{filteredLogs.length}</span></p>
           <div className="flex gap-1 md:gap-2">
@@ -877,12 +877,12 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
   const [dateEnd, setDateEnd] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Proof modal state
+
   const [proofLog, setProofLog] = useState<LogEntry | null>(null);
 
 
 
-  // Claim form modal state (admin only)
+
   const [claimLog, setClaimLog] = useState<LogEntry | null>(null);
   const [claimForm, setClaimForm] = useState({
     periodStart: '',
@@ -893,13 +893,13 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
   });
   const [claimSaving, setClaimSaving] = useState(false);
 
-  // Vendors list for dropdown
+
   const [vendorsList, setVendorsList] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
     if (isInternal) {
       supabase.from('vendors').select('id, name').order('name').then(({ data }) => {
         if (data) {
-          // Deduplicate by name
+
           const unique = data.reduce((acc: { id: string; name: string }[], v: any) => {
             if (!acc.find(x => x.name === v.name)) acc.push({ id: v.id, name: v.name });
             return acc;
@@ -910,8 +910,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
     }
   }, [isInternal]);
 
-  // Filter logs based on date range and status
-  // Discrepancy Reports only shows REJECTED logs
+
   const filteredLogs = React.useMemo(() => {
     let result = logs.filter(l => l.status === 'REJECTED');
     if (dateStart) {
@@ -923,7 +922,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
     return result;
   }, [logs, dateStart, dateEnd]);
 
-  // Export filtered logs as CSV
+
   const handleExport = () => {
     const headers = ['ID', 'Timestamp', 'Part Code', 'Part Name', 'Target', 'Detected', 'Sensor Weight', 'Status', 'Vendor'];
     const rows = filteredLogs.map((l) => [
@@ -940,10 +939,10 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
     URL.revokeObjectURL(url);
   };
 
-  // Open claim form with pre-filled data from the log
+
   const openClaimForm = (log: LogEntry) => {
     const today = new Date().toISOString().split('T')[0];
-    // Default period: start of month to today
+
     const monthStart = today.substring(0, 7) + '-01';
     setClaimForm({
       periodStart: monthStart,
@@ -955,14 +954,14 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
     setClaimLog(log);
   };
 
-  // Submit claim to Supabase
+
   const handleSubmitClaim = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimLog || claimSaving) return;
     setClaimSaving(true);
 
     try {
-      // Get vendor_id: prefer form dropdown, then log, then lookup by name
+
       let vendorId = claimForm.vendorId || claimLog.vendor_id;
       if (!vendorId && claimLog.vendor && claimLog.vendor !== 'Unknown Vendor') {
         const { data: vendorData } = await supabase
@@ -1005,7 +1004,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
       }
 
       alert('Claim request berhasil dikirim ke vendor!');
-      // Mark this log as sent so the button gets disabled
+
       setClaimSentIds(prev => new Set(prev).add(claimLog.id));
       setClaimLog(null);
       setClaimForm({ periodStart: '', periodEnd: '', claimAmount: '', notes: '', vendorId: '' });
@@ -1051,7 +1050,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
         </div>
       </section>
 
-      {/* Table — full width, no sidebar */}
+
       <section className="w-full bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -1097,7 +1096,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
                   </td>
                   <td className="px-6 py-5 text-center">
                     <div className="flex justify-center gap-2">
-                      {/* Check Proof — both vendor and admin */}
+
                       <button
                         onClick={() => setProofLog(log)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-95"
@@ -1105,7 +1104,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
                         <Eye size={14} />
                         Check Proof
                       </button>
-                      {/* Send Request — admin only, disabled after sent */}
+
                       {isInternal && (
                         <button
                           onClick={() => !claimSentIds.has(log.id) && openClaimForm(log)}
@@ -1133,7 +1132,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
         </div>
       </section>
 
-      {/* ══════════ Proof Modal ══════════ */}
+
       <AnimatePresence>
         {proofLog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setProofLog(null)}>
@@ -1145,7 +1144,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
               className="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-2xl border border-outline-variant/20 overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              {/* Modal Header */}
+
               <div className="p-6 border-b border-outline-variant/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h3 className="text-sm font-bold uppercase tracking-widest">Inspection Proof</h3>
@@ -1158,7 +1157,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
                 </button>
               </div>
 
-              {/* Proof Image */}
+
               <div className="w-full h-56 bg-surface-container-highest relative overflow-hidden">
                 <img
                   src={proofLog.proofUrl || 'https://picsum.photos/seed/heatmap/400/300'}
@@ -1175,7 +1174,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
                 </div>
               </div>
 
-              {/* Detail */}
+
               <div className="p-6 space-y-4">
                 <div className="flex flex-col">
                   <span className="text-[10px] text-outline font-bold uppercase tracking-widest">Log Detail</span>
@@ -1219,7 +1218,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
         )}
       </AnimatePresence>
 
-      {/* ══════════ Claim Request Form Modal (Admin) ══════════ */}
+
       <AnimatePresence>
         {claimLog && isInternal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !claimSaving && setClaimLog(null)}>
@@ -1231,7 +1230,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
               className="bg-surface-container-lowest w-full max-w-xl rounded-2xl shadow-2xl border border-outline-variant/20 overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              {/* Header */}
+
               <div className="p-6 border-b border-outline-variant/10 flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold">Send Claim Request</h3>
@@ -1242,7 +1241,7 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
                 </button>
               </div>
 
-              {/* Inspection Proof Preview */}
+
               <div className="px-6 pt-6">
                 <div className="bg-surface-container-low rounded-xl p-4 flex gap-4 items-start">
                   <div className="w-24 h-16 rounded-lg overflow-hidden bg-surface-container-highest shrink-0">
@@ -1269,9 +1268,9 @@ const DiscrepancyLogs = ({ logs, setLogs, claimSentIds, setClaimSentIds }: { log
                 </div>
               </div>
 
-              {/* Form */}
+
               <form onSubmit={handleSubmitClaim} className="p-6 space-y-4">
-                {/* Vendor Dropdown */}
+
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-outline uppercase tracking-widest">Vendor *</label>
                   <select
@@ -1636,7 +1635,7 @@ export default function App() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Added global state for CRUD
+
   const [parts, setParts] = useState<Part[]>(MOCK_PARTS);
   const [logs, setLogs] = useState<LogEntry[]>(MOCK_LOGS);
   const [claimSentIds, setClaimSentIds] = useState<Set<string>>(new Set());
@@ -1669,7 +1668,7 @@ export default function App() {
           let tsStr = l.timestamp;
           const rawDate = new Date(l.timestamp);
           if (!isNaN(rawDate.getTime())) {
-            // Database returns UTC (timestamptz), convert to GMT+7 (WIB) for display
+
             const wibDate = new Date(rawDate.getTime() + 7 * 60 * 60 * 1000);
             tsStr = wibDate.getFullYear() + '-' +
               String(wibDate.getUTCMonth() + 1).padStart(2, '0') + '-' +
@@ -1705,7 +1704,7 @@ export default function App() {
         setLogs(formattedLogs.length > 0 ? formattedLogs : MOCK_LOGS);
       }
 
-      // Load sent claim IDs to persist disabled request buttons across page refreshes
+
       const { data: dbClaims } = await supabase.from('claim_reports').select('supporting_docs_urls');
       if (dbClaims) {
         const sentIds = new Set<string>();
@@ -1723,11 +1722,10 @@ export default function App() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
   const renderPage = () => {
-    // Prevent vendors from accessing internal-only pages
+
     if (!isInternal && (currentPage === 'live' || currentPage === 'master')) {
       return <QCAnalytics />;
     }
@@ -1743,7 +1741,7 @@ export default function App() {
     }
   };
 
-  // Auth loading state
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
@@ -1755,14 +1753,14 @@ export default function App() {
     );
   }
 
-  // Not authenticated — show login
+
   if (!session || !userProfile) {
     return <LoginPage />;
   }
 
   return (
     <div className="min-h-screen bg-surface flex">
-      {/* Mobile Overlay */}
+
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div

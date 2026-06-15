@@ -23,16 +23,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (authUser: User) => {
-    console.log('AuthContext: fetchProfile called for', authUser.id);
     try {
-      console.log('AuthContext: starting Supabase query');
       const { data, error } = await supabase
         .from('users')
         .select('*, vendors(name)')
         .eq('auth_uid', authUser.id)
         .single();
       
-      console.log('AuthContext: Supabase query finished', { data, error });
+
 
       if (error) {
         console.error('Error fetching profile:', error);
@@ -40,7 +38,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data) {
-        console.log('AuthContext: Profile data found, setting userProfile state');
         setUserProfile({
           id: data.id,
           auth_uid: data.auth_uid,
@@ -53,42 +50,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } catch (err) {
-      console.error('Profile fetch failed with exception:', err);
+      console.error('Profile fetch failed:', err);
     }
   }, []);
 
   useEffect(() => {
-    console.log("AuthContext: Starting initial session listener");
-    
-    // Listen for auth changes. INITIAL_SESSION is fired automatically on mount in v2
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
-        console.log("AuthContext: onAuthStateChange event", event);
-        
-        // Prevent concurrent fetches if event is not changing user
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
         if (newSession?.user) {
-          console.log("AuthContext: fetching profile from onAuthStateChange");
-          // Do NOT await fetchProfile here to avoid deadlocking Supabase's auth token lock!
+          // Do NOT await fetchProfile here — avoids deadlocking Supabase's auth token lock
           fetchProfile(newSession.user).finally(() => {
-            console.log("AuthContext: setting loading false after profile fetch");
             setLoading(false);
           });
         } else {
           setUserProfile(null);
-          console.log("AuthContext: setting loading false from onAuthStateChange (no user)");
           setLoading(false);
         }
       }
     );
 
-    // Fallback: If INITIAL_SESSION doesn't fire within 2 seconds, force loading to false
+    // Fallback if INITIAL_SESSION doesn't fire within 2 seconds
     const fallbackTimer = setTimeout(() => {
       setLoading(prev => {
         if (prev) {
-          console.warn("AuthContext: INITIAL_SESSION event timed out. Forcing loading to false.");
           return false;
         }
         return prev;
